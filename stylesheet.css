@@ -1,0 +1,97 @@
+/* Wellbeing Widget - Zen Aesthetic Styling */
+
+/* Panel Label - Soft gradient with calming colors */
+.wellbeing-panel-label {
+  color: #2d3436;
+  font-weight: 600;
+  font-size: 11px;
+  letter-spacing: 0.5px;
+  padding: 4px 12px;
+  background: linear-gradient(135deg, #b8e6d5 0%, #d4e7f2 100%);
+  border-radius: 12px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  transition: all 0.3s ease;
+}
+
+.wellbeing-panel-label:hover {
+  background: linear-gradient(135deg, #a8d6c5 0%, #c4d7e2 100%);
+  box-shadow: 0 3px 6px rgba(0, 0, 0, 0.15);
+}
+
+/* Menu Container - Clean Adwaita style */
+.wellbeing-menu {
+  min-width: 320px;
+  padding: 8px;
+}
+
+/* Header Section */
+.wellbeing-header {
+  padding: 12px 16px;
+  margin-bottom: 8px;
+}
+
+.wellbeing-header-box {
+  spacing: 8px;
+}
+
+.wellbeing-title {
+  font-size: 16px;
+  font-weight: 700;
+  color: #2d3436;
+  text-align: center;
+}
+
+/* Stats Display */
+.wellbeing-stat-item {
+  padding: 10px 16px;
+  margin: 4px 0;
+  border-radius: 8px;
+  background: rgba(184, 230, 213, 0.15);
+  transition: background 0.2s ease;
+}
+
+.wellbeing-stat-item:hover {
+  background: rgba(184, 230, 213, 0.25);
+}
+
+.wellbeing-stat-box {
+  spacing: 12px;
+}
+
+.wellbeing-stat-label {
+  font-size: 13px;
+  font-weight: 500;
+  color: #2d3436;
+}
+
+/* Menu Items - Control buttons */
+.popup-menu-item {
+  border-radius: 8px;
+  padding: 8px 12px;
+  margin: 2px 0;
+  transition: all 0.2s ease;
+}
+
+.popup-menu-item:hover {
+  background: linear-gradient(135deg, #c7e4d0 0%, #d3eaf8 100%);
+}
+
+.popup-menu-item:active {
+  background: linear-gradient(135deg, #b4d4c0 0%, #c0dae8 100%);
+}
+
+/* Separator styling */
+.popup-separator-menu-item {
+  margin: 8px 0;
+}
+
+/* Switch styling for break reminders */
+.toggle-switch {
+  background: #95a5a6;
+  border-radius: 12px;
+  transition: background 0.3s ease;
+}
+
+.toggle-switch:checked {
+  background: linear-gradient(135deg, #81c995 0%, #88d4ab 100%);
+}

@@ -1,0 +1,11 @@
+{
+  "name": "Wellbeing Widget",
+  "description": "A minimal, zen-style screen time and Pomodoro tracker for GNOME 49..",
+  "uuid": "screentime@mehedi.io",
+  "shell-version": [
+    "49"
+  ],
+  "version": 1,
+  "url": "https://github.com/mehedi-hasan/wellbeing-widget"
+}
+

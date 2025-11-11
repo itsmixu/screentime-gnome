@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<schemalist>
+  <schema id="org.gnome.shell.extensions.wellbeing" path="/org/gnome/shell/extensions/wellbeing/">
+
+    <key name="break-reminders" type="b">
+      <default>true</default>
+      <summary>Enable break reminders</summary>
+      <description>Show notifications reminding you to take breaks every 30 minutes</description>
+    </key>
+
+    <key name="pomodoro-duration" type="i">
+      <default>25</default>
+      <range min="5" max="60"/>
+      <summary>Pomodoro duration in minutes</summary>
+      <description>Length of each Pomodoro work session</description>
+    </key>
+
+    <key name="break-interval" type="i">
+      <default>30</default>
+      <range min="15" max="120"/>
+      <summary>Break reminder interval</summary>
+      <description>How often to show break reminders in minutes</description>
+    </key>
+
+    <key name="show-panel-icon" type="b">
+      <default>true</default>
+      <summary>Show panel icon</summary>
+      <description>Display the wellbeing widget in the top panel</description>
+    </key>
+
+  </schema>
+</schemalist>
