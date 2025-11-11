@@ -17,7 +17,6 @@
  */
 import {Extension} from 'resource:///org/gnome/shell/extensions/extension.js';
 import St from 'gi://St';
-import Gio from 'gi://Gio';
 import GLib from 'gi://GLib';
 import GObject from 'gi://GObject';
 import Clutter from 'gi://Clutter';
@@ -46,68 +45,107 @@ class WellbeingIndicator extends PanelMenu.Button {
     }
 
     _buildUI() {
-        // Panel label
+        // Panel label with icon
+        const panelBox = new St.BoxLayout({
+            style_class: 'wellbeing-panel-box'
+        });
+
+        this._icon = new St.Icon({
+            icon_name: 'preferences-system-time-symbolic',
+            style_class: 'system-status-icon wellbeing-panel-icon'
+        });
+
         this._label = new St.Label({
-            text: '☀️ Loading…',
+            text: 'Loading…',
             y_align: Clutter.ActorAlign.CENTER,
             style_class: 'wellbeing-panel-label'
         });
-        this.add_child(this._label);
+
+        panelBox.add_child(this._icon);
+        panelBox.add_child(this._label);
+        this.add_child(panelBox);
 
         // Menu styling
         this.menu.box.style_class = 'wellbeing-menu';
 
-        // Header section
+        // Header section with icon
         const headerItem = new PopupMenu.PopupBaseMenuItem({
             reactive: false,
             can_focus: false,
             style_class: 'wellbeing-header'
         });
-        const headerBox = new St.BoxLayout({vertical: true, style_class: 'wellbeing-header-box'});
+        const headerBox = new St.BoxLayout({
+            vertical: false,
+            style_class: 'wellbeing-header-box'
+        });
+        const headerIcon = new St.Icon({
+            icon_name: 'emblem-favorite-symbolic',
+            icon_size: 20,
+            style_class: 'wellbeing-header-icon'
+        });
         const titleLabel = new St.Label({
-            text: '🌿 Wellbeing Center',
+            text: 'Wellbeing Dashboard',
             style_class: 'wellbeing-title'
         });
+        headerBox.add_child(headerIcon);
         headerBox.add_child(titleLabel);
         headerItem.add_child(headerBox);
         this.menu.addMenuItem(headerItem);
 
         this.menu.addMenuItem(new PopupMenu.PopupSeparatorMenuItem());
 
-        // Screen time display
+        // Screen time display with icon
         this._screenItem = new PopupMenu.PopupBaseMenuItem({
             reactive: false,
             style_class: 'wellbeing-stat-item'
         });
-        const screenBox = new St.BoxLayout({vertical: false, style_class: 'wellbeing-stat-box'});
+        const screenBox = new St.BoxLayout({
+            vertical: false,
+            style_class: 'wellbeing-stat-box'
+        });
+        const screenIcon = new St.Icon({
+            icon_name: 'video-display-symbolic',
+            icon_size: 18,
+            style_class: 'wellbeing-stat-icon'
+        });
         this._screenLabel = new St.Label({
-            text: '📊 Daily Screen Time: calculating…',
+            text: 'Screen Time: calculating…',
             style_class: 'wellbeing-stat-label'
         });
+        screenBox.add_child(screenIcon);
         screenBox.add_child(this._screenLabel);
         this._screenItem.add_child(screenBox);
         this.menu.addMenuItem(this._screenItem);
 
-        // Pomodoro display
+        // Pomodoro display with icon
         this._pomoItem = new PopupMenu.PopupBaseMenuItem({
             reactive: false,
             style_class: 'wellbeing-stat-item'
         });
-        const pomoBox = new St.BoxLayout({vertical: false, style_class: 'wellbeing-stat-box'});
+        const pomoBox = new St.BoxLayout({
+            vertical: false,
+            style_class: 'wellbeing-stat-box'
+        });
+        this._pomoIcon = new St.Icon({
+            icon_name: 'media-playback-pause-symbolic',
+            icon_size: 18,
+            style_class: 'wellbeing-stat-icon'
+        });
         this._pomoLabel = new St.Label({
-            text: '🍅 Pomodoro: Ready',
+            text: 'Pomodoro: Ready',
             style_class: 'wellbeing-stat-label'
         });
+        pomoBox.add_child(this._pomoIcon);
         pomoBox.add_child(this._pomoLabel);
         this._pomoItem.add_child(pomoBox);
         this.menu.addMenuItem(this._pomoItem);
 
         this.menu.addMenuItem(new PopupMenu.PopupSeparatorMenuItem());
 
-        // Pomodoro controls
-        this._startPomodoro = new PopupMenu.PopupMenuItem('▶ Start Pomodoro');
-        this._pausePomodoro = new PopupMenu.PopupMenuItem('⏸ Pause');
-        this._resetPomodoro = new PopupMenu.PopupMenuItem('🔁 Reset');
+        // Pomodoro controls with icons
+        this._startPomodoro = new PopupMenu.PopupImageMenuItem('Start Focus Session', 'media-playback-start-symbolic');
+        this._pausePomodoro = new PopupMenu.PopupImageMenuItem('Pause Timer', 'media-playback-pause-symbolic');
+        this._resetPomodoro = new PopupMenu.PopupImageMenuItem('Reset Timer', 'edit-undo-symbolic');
 
         this.menu.addMenuItem(this._startPomodoro);
         this.menu.addMenuItem(this._pausePomodoro);
@@ -115,8 +153,14 @@ class WellbeingIndicator extends PanelMenu.Button {
 
         this.menu.addMenuItem(new PopupMenu.PopupSeparatorMenuItem());
 
-        // Break reminder toggle
-        this._breakToggle = new PopupMenu.PopupSwitchMenuItem('🔔 Break Reminders', this._breakReminders);
+        // Break reminder toggle with icon
+        this._breakToggle = new PopupMenu.PopupSwitchMenuItem('Break Reminders', this._breakReminders);
+        const breakIcon = new St.Icon({
+            icon_name: 'preferences-system-notifications-symbolic',
+            icon_size: 16,
+            style_class: 'popup-menu-icon'
+        });
+        this._breakToggle.insert_child_at_index(breakIcon, 1);
         this.menu.addMenuItem(this._breakToggle);
 
         // Connect signals
@@ -140,15 +184,22 @@ class WellbeingIndicator extends PanelMenu.Button {
         const screenTime = this._getDailyScreenTime();
         const pomoStatus = this._getPomoStatus();
 
-        this._label.text = `☀️ ${screenTime}h • ${pomoStatus.short}`;
-        this._screenLabel.text = `📊 Daily Screen Time: ${screenTime} hours`;
-        this._pomoLabel.text = `🍅 Pomodoro: ${pomoStatus.full}`;
+        this._label.text = `${screenTime}h  ${pomoStatus.short}`;
+        this._screenLabel.text = `Screen Time: ${screenTime} hours today`;
+        this._pomoLabel.text = `Focus Timer: ${pomoStatus.full}`;
+
+        // Update pomodoro icon based on state
+        if (this._pomoRunning) {
+            this._pomoIcon.icon_name = 'media-playback-start-symbolic';
+        } else {
+            this._pomoIcon.icon_name = 'media-playback-pause-symbolic';
+        }
 
         // Break reminder (every 30 minutes of screen time)
         if (this._breakReminders) {
             const currentTime = Math.floor(Date.now() / 1000);
             if (currentTime - this._lastBreakNotification > 1800) {
-                Main.notify('🌿 Time for a break!', 'You\'ve been working for a while. Stand up, stretch, and rest your eyes.');
+                Main.notify('Break Time', 'You\'ve been working for a while. Stand up, stretch, and rest your eyes.');
                 this._lastBreakNotification = currentTime;
             }
         }
@@ -164,12 +215,12 @@ class WellbeingIndicator extends PanelMenu.Button {
     _startPomo() {
         if (this._pomoRunning) return;
         this._pomoRunning = true;
-        Main.notify('🍅 Pomodoro started', 'Focus time begins. Stay concentrated!');
+        Main.notify('Focus Session Started', 'Stay concentrated! Timer is running.');
         this._pomoTimer = GLib.timeout_add_seconds(GLib.PRIORITY_DEFAULT, 1, () => {
             this._pomoRemaining--;
             this._updateUI();
             if (this._pomoRemaining <= 0) {
-                Main.notify('🌿 Pomodoro complete!', 'Great work! Take a 5-minute break.');
+                Main.notify('Focus Session Complete', 'Great work! Take a 5-minute break.');
                 this._resetPomo();
                 return GLib.SOURCE_REMOVE;
             }
