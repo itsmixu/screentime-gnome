@@ -78,11 +78,11 @@ A beautiful, zen-style screen time tracker and Pomodoro timer for GNOME 49+. Sta
    ```
    - State should show: `ENABLED` (not ERROR)
 
-### Method 2: From GitHub (Once uploaded)
+### Method 2: From GitHub
 
 ```bash
 # Clone the repository
-git clone https://github.com/mehedi-hasan/wellbeing-widget.git
+git clone https://github.com/mH-13/wellbeing-widget.git
 
 # Navigate to the extension directory
 cd wellbeing-widget
@@ -156,7 +156,7 @@ screentime@mehedi.io/
 
 1. **Clone the repository:**
    ```bash
-   git clone https://github.com/mehedi-hasan/wellbeing-widget.git
+   git clone https://github.com/mH-13/wellbeing-widget.git
    cd wellbeing-widget
    ```
 
@@ -271,7 +271,7 @@ This project is licensed under the GNU General Public License v2.0 or later - se
 ## 👤 Author
 
 **Mehedi Hasan**
-- GitHub: [@mehedi-hasan](https://github.com/mehedi-hasan)
+- GitHub: [@mH-13](https://github.com/mH-13)
 - Extension UUID: `screentime@mehedi.io`
 
 ## 🙏 Acknowledgments
@@ -282,9 +282,8 @@ This project is licensed under the GNU General Public License v2.0 or later - se
 
 ## 📞 Support
 
-- **Issues:** [GitHub Issues](https://github.com/mehedi-hasan/wellbeing-widget/issues)
-- **Discussions:** [GitHub Discussions](https://github.com/mehedi-hasan/wellbeing-widget/discussions)
-- **Email:** (Your email here)
+- **Issues:** [GitHub Issues](https://github.com/mH-13/wellbeing-widget/issues)
+- **Discussions:** [GitHub Discussions](https://github.com/mH-13/wellbeing-widget/discussions)
 
 ## 📚 Resources
 
