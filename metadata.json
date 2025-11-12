@@ -1,9 +1,13 @@
 {
   "name": "Wellbeing Widget",
-  "description": "A minimal, zen-style screen time and Pomodoro tracker for GNOME 49+",
+  "description": "Mindful screen time tracker, Pomodoro timer, and zen music player with beautiful sage green aesthetic",
   "uuid": "screentime@mehedi.io",
   "settings-schema": "org.gnome.shell.extensions.wellbeing",
   "shell-version": [
+    "45",
+    "46",
+    "47",
+    "48",
     "49"
   ],
   "version": 1,
