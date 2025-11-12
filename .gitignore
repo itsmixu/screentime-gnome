@@ -8,3 +8,6 @@ schemas/gschemas.compiled
 .idea/
 DEV.md
 test-screentime.sh
+progressive-commits.sh
+commit-changes.sh
+RELEASE_CHECKLIST.md
