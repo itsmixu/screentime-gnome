@@ -15,6 +15,32 @@
       <description>Length of each Pomodoro work session</description>
     </key>
 
+    <key name="short-break-duration" type="i">
+      <default>5</default>
+      <range min="1" max="15"/>
+      <summary>Short break duration in minutes</summary>
+      <description>Length of short breaks between Pomodoros</description>
+    </key>
+
+    <key name="long-break-duration" type="i">
+      <default>15</default>
+      <range min="10" max="30"/>
+      <summary>Long break duration in minutes</summary>
+      <description>Length of long breaks after 4 Pomodoros</description>
+    </key>
+
+    <key name="sound-alerts" type="b">
+      <default>true</default>
+      <summary>Enable sound alerts</summary>
+      <description>Play sound when Pomodoro or break completes</description>
+    </key>
+
+    <key name="visual-alerts" type="b">
+      <default>true</default>
+      <summary>Enable visual alerts</summary>
+      <description>Show notifications when Pomodoro or break completes</description>
+    </key>
+
     <key name="break-interval" type="i">
       <default>30</default>
       <range min="15" max="120"/>
@@ -26,6 +52,12 @@
       <default>true</default>
       <summary>Show panel icon</summary>
       <description>Display the wellbeing widget in the top panel</description>
+    </key>
+
+    <key name="statistics-data" type="s">
+      <default>''</default>
+      <summary>Statistics data storage</summary>
+      <description>JSON string storing historical screen time and Pomodoro data</description>
     </key>
 
   </schema>
