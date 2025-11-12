@@ -6,3 +6,5 @@ schemas/gschemas.compiled
 .DS_Store
 .vscode/
 .idea/
+DEV.md
+test-screentime.sh
