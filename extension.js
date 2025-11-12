@@ -35,13 +35,56 @@ class WellbeingIndicator extends PanelMenu.Button {
 
         // Pomodoro state
         this._pomoTimer = null;
-        this._pomoRemaining = 25 * 60;
+        this._pomoDuration = this._settings.get_int('pomodoro-duration') * 60;
+        this._pomoRemaining = this._pomoDuration;
         this._pomoRunning = false;
+        this._pomoCount = 0; // Track completed Pomodoros for long breaks
         this._breakReminders = true;
         this._lastBreakNotification = 0;
 
+        // Quote rotation state (change every 1 hour)
+        this._lastQuoteChange = Date.now();
+        this._currentQuote = null;
+
+        // Statistics tracking
+        this._statsView = 'weekly'; // 'weekly' or 'monthly'
+        this._loadStats();
+
         this._buildUI();
         this._startUpdating();
+    }
+
+    _loadStats() {
+        // Load or initialize statistics data
+        const statsJson = this._settings.get_string('statistics-data');
+        try {
+            this._stats = statsJson ? JSON.parse(statsJson) : { daily: {}, pomodoros: {} };
+        } catch (e) {
+            this._stats = { daily: {}, pomodoros: {} };
+        }
+    }
+
+    _saveStats() {
+        try {
+            this._settings.set_string('statistics-data', JSON.stringify(this._stats));
+        } catch (e) {
+            log(`Wellbeing Widget: Error saving stats: ${e.message}`);
+        }
+    }
+
+    _recordDailyStats(date, screenTimeSeconds) {
+        const dateStr = date.toISOString().split('T')[0]; // YYYY-MM-DD
+        this._stats.daily[dateStr] = screenTimeSeconds;
+        this._saveStats();
+    }
+
+    _recordPomodoro(date) {
+        const dateStr = date.toISOString().split('T')[0];
+        if (!this._stats.pomodoros[dateStr]) {
+            this._stats.pomodoros[dateStr] = 0;
+        }
+        this._stats.pomodoros[dateStr]++;
+        this._saveStats();
     }
 
     _buildUI() {
@@ -68,18 +111,23 @@ class WellbeingIndicator extends PanelMenu.Button {
         // Menu styling
         this.menu.box.style_class = 'wellbeing-menu';
 
-        // Header section with icon
-        const headerItem = new PopupMenu.PopupBaseMenuItem({
+        // Combined Header + Quote section
+        const headerQuoteItem = new PopupMenu.PopupBaseMenuItem({
             reactive: false,
-            can_focus: false,
-            style_class: 'wellbeing-header'
+            style_class: 'wellbeing-header-quote-section'
         });
+        const headerQuoteBox = new St.BoxLayout({
+            vertical: true,
+            style_class: 'wellbeing-header-quote-box'
+        });
+
+        // Top: Icon + Title
         const headerBox = new St.BoxLayout({
             vertical: false,
-            style_class: 'wellbeing-header-box'
+            style_class: 'wellbeing-header-title-box'
         });
         const headerIcon = new St.Icon({
-            icon_name: 'emblem-favorite-symbolic',
+            icon_name: 'weather-clear-symbolic',
             icon_size: 20,
             style_class: 'wellbeing-header-icon'
         });
@@ -89,69 +137,186 @@ class WellbeingIndicator extends PanelMenu.Button {
         });
         headerBox.add_child(headerIcon);
         headerBox.add_child(titleLabel);
-        headerItem.add_child(headerBox);
-        this.menu.addMenuItem(headerItem);
 
-        this.menu.addMenuItem(new PopupMenu.PopupSeparatorMenuItem());
+        // Bottom: Quote
+        this._quoteLabel = new St.Label({
+            text: this._getMotivationalQuote(),
+            style_class: 'wellbeing-quote-label-compact'
+        });
 
-        // Screen time display with icon
-        this._screenItem = new PopupMenu.PopupBaseMenuItem({
+        headerQuoteBox.add_child(headerBox);
+        headerQuoteBox.add_child(this._quoteLabel);
+        headerQuoteItem.add_child(headerQuoteBox);
+        this.menu.addMenuItem(headerQuoteItem);
+
+        // Statistics section (Weekly only)
+        const statsHeader = new PopupMenu.PopupBaseMenuItem({ reactive: false });
+        const statsTitle = new St.Label({
+            text: 'Weekly Overview',
+            style_class: 'wellbeing-section-header'
+        });
+        statsHeader.add_child(statsTitle);
+        this.menu.addMenuItem(statsHeader);
+
+        // Mini graph visualization
+        this._statsGraphItem = new PopupMenu.PopupBaseMenuItem({
             reactive: false,
-            style_class: 'wellbeing-stat-item'
+            style_class: 'wellbeing-stats-graph-item'
         });
-        const screenBox = new St.BoxLayout({
-            vertical: false,
-            style_class: 'wellbeing-stat-box'
+        this._statsGraphBox = new St.BoxLayout({
+            vertical: true,
+            style_class: 'wellbeing-stats-graph-box'
         });
-        const screenIcon = new St.Icon({
-            icon_name: 'video-display-symbolic',
-            icon_size: 18,
-            style_class: 'wellbeing-stat-icon'
-        });
-        this._screenLabel = new St.Label({
-            text: 'Screen Time: calculating…',
-            style_class: 'wellbeing-stat-label'
-        });
-        screenBox.add_child(screenIcon);
-        screenBox.add_child(this._screenLabel);
-        this._screenItem.add_child(screenBox);
-        this.menu.addMenuItem(this._screenItem);
+        this._statsGraphItem.add_child(this._statsGraphBox);
+        this.menu.addMenuItem(this._statsGraphItem);
 
-        // Pomodoro display with icon
-        this._pomoItem = new PopupMenu.PopupBaseMenuItem({
+        // Stats summary
+        this._statsSummaryItem = new PopupMenu.PopupBaseMenuItem({
             reactive: false,
-            style_class: 'wellbeing-stat-item'
+            style_class: 'wellbeing-stats-summary-item'
         });
-        const pomoBox = new St.BoxLayout({
+        this._statsSummaryLabel = new St.Label({
+            text: 'Loading statistics...',
+            style_class: 'wellbeing-stats-summary-label'
+        });
+        this._statsSummaryItem.add_child(this._statsSummaryLabel);
+        this.menu.addMenuItem(this._statsSummaryItem);
+
+        // Combined Focus Session section (Duration + Controls) - Vertical layout
+        const focusSection = new PopupMenu.PopupBaseMenuItem({
+            reactive: false,
+            style_class: 'wellbeing-focus-section'
+        });
+
+        const focusMainBox = new St.BoxLayout({
+            vertical: true,
+            style_class: 'wellbeing-focus-main-box'
+        });
+
+        // Row 1: Title
+        const focusTitle = new St.Label({
+            text: '🍅 Focus Session',
+            style_class: 'wellbeing-focus-title',
+            x_align: Clutter.ActorAlign.CENTER
+        });
+
+        // Row 2: Duration buttons
+        const durationContainer = new St.BoxLayout({
             vertical: false,
-            style_class: 'wellbeing-stat-box'
+            x_expand: true,
+            style_class: 'wellbeing-duration-box-inline'
         });
-        this._pomoIcon = new St.Icon({
-            icon_name: 'media-playback-pause-symbolic',
-            icon_size: 18,
-            style_class: 'wellbeing-stat-icon'
+
+        // Duration buttons
+        const durations = [15, 25, 45, 60];
+        this._durationButtons = [];
+
+        for (const duration of durations) {
+            const btn = new St.Button({
+                label: `${duration}m`,
+                style_class: 'wellbeing-duration-button-compact',
+                x_expand: true
+            });
+
+            if (duration === this._settings.get_int('pomodoro-duration')) {
+                btn.add_style_class_name('wellbeing-duration-active');
+            }
+
+            btn.connect('clicked', () => {
+                this._settings.set_int('pomodoro-duration', duration);
+                this._pomoDuration = duration * 60;
+                this._pomoRemaining = this._pomoDuration;
+                this._updateDurationButtons();
+                this._updateUI();
+            });
+
+            this._durationButtons.push(btn);
+            durationContainer.add_child(btn);
+        }
+
+        // Row 3: Control buttons
+        const controlsBox = new St.BoxLayout({
+            vertical: false,
+            x_expand: true,
+            style_class: 'wellbeing-focus-controls-box'
         });
-        this._pomoLabel = new St.Label({
-            text: 'Pomodoro: Ready',
-            style_class: 'wellbeing-stat-label'
+
+        this._startPomodoro = new St.Button({
+            label: '▶ Start',
+            style_class: 'wellbeing-pomo-button wellbeing-pomo-button-start',
+            x_expand: true
         });
-        pomoBox.add_child(this._pomoIcon);
-        pomoBox.add_child(this._pomoLabel);
-        this._pomoItem.add_child(pomoBox);
-        this.menu.addMenuItem(this._pomoItem);
 
-        this.menu.addMenuItem(new PopupMenu.PopupSeparatorMenuItem());
+        this._pausePomodoro = new St.Button({
+            label: '⏸ Pause',
+            style_class: 'wellbeing-pomo-button wellbeing-pomo-button-pause',
+            x_expand: true
+        });
 
-        // Pomodoro controls with icons
-        this._startPomodoro = new PopupMenu.PopupImageMenuItem('Start Focus Session', 'media-playback-start-symbolic');
-        this._pausePomodoro = new PopupMenu.PopupImageMenuItem('Pause Timer', 'media-playback-pause-symbolic');
-        this._resetPomodoro = new PopupMenu.PopupImageMenuItem('Reset Timer', 'edit-undo-symbolic');
+        this._resetPomodoro = new St.Button({
+            label: '↺ Reset',
+            style_class: 'wellbeing-pomo-button wellbeing-pomo-button-reset',
+            x_expand: true
+        });
 
-        this.menu.addMenuItem(this._startPomodoro);
-        this.menu.addMenuItem(this._pausePomodoro);
-        this.menu.addMenuItem(this._resetPomodoro);
+        controlsBox.add_child(this._startPomodoro);
+        controlsBox.add_child(this._pausePomodoro);
+        controlsBox.add_child(this._resetPomodoro);
 
-        this.menu.addMenuItem(new PopupMenu.PopupSeparatorMenuItem());
+        // Add all rows to main box
+        focusMainBox.add_child(focusTitle);
+        focusMainBox.add_child(durationContainer);
+        focusMainBox.add_child(controlsBox);
+        focusSection.add_child(focusMainBox);
+        this.menu.addMenuItem(focusSection);
+
+        // Zen Music Player section
+        const musicSection = new PopupMenu.PopupBaseMenuItem({
+            reactive: false,
+            style_class: 'wellbeing-music-section'
+        });
+
+        const musicContainer = new St.BoxLayout({
+            vertical: false,
+            x_expand: true,
+            style_class: 'wellbeing-music-container'
+        });
+
+        // Music label (emoji is part of text, no separate icon needed)
+        const musicTitleLabel = new St.Label({
+            text: '🎵 Zen Music',
+            style_class: 'wellbeing-music-title-label'
+        });
+
+        // Music controls
+        const musicControlsBox = new St.BoxLayout({
+            vertical: false,
+            style_class: 'wellbeing-music-controls-box'
+        });
+
+        this._playMusicBtn = new St.Button({
+            label: '▶ Play',
+            style_class: 'wellbeing-music-button'
+        });
+
+        this._stopMusicBtn = new St.Button({
+            label: '⏹ Stop',
+            style_class: 'wellbeing-music-button'
+        });
+
+        musicControlsBox.add_child(this._playMusicBtn);
+        musicControlsBox.add_child(this._stopMusicBtn);
+
+        musicContainer.add_child(musicTitleLabel);
+        musicContainer.add_child(musicControlsBox);
+        musicSection.add_child(musicContainer);
+        this.menu.addMenuItem(musicSection);
+
+        // Music state
+        this._musicPlaying = false;
+        this._musicProcess = null;
+        this._musicAnimationTimer = null;
+        this._musicAnimationState = 0;
 
         // Break reminder toggle with icon
         this._breakToggle = new PopupMenu.PopupSwitchMenuItem('Break Reminders', this._breakReminders);
@@ -164,9 +329,11 @@ class WellbeingIndicator extends PanelMenu.Button {
         this.menu.addMenuItem(this._breakToggle);
 
         // Connect signals
-        this._startPomodoro.connect('activate', () => this._startPomo());
-        this._pausePomodoro.connect('activate', () => this._pausePomo());
-        this._resetPomodoro.connect('activate', () => this._resetPomo());
+        this._startPomodoro.connect('clicked', () => this._startPomo());
+        this._pausePomodoro.connect('clicked', () => this._pausePomo());
+        this._resetPomodoro.connect('clicked', () => this._resetPomo());
+        this._playMusicBtn.connect('clicked', () => this._playZenMusic());
+        this._stopMusicBtn.connect('clicked', () => this._stopZenMusic());
         this._breakToggle.connect('toggled', (_item, state) => {
             this._breakReminders = state;
         });
@@ -180,26 +347,237 @@ class WellbeingIndicator extends PanelMenu.Button {
         });
     }
 
+    _updateDurationButtons() {
+        const currentDuration = this._settings.get_int('pomodoro-duration');
+        const durations = [15, 25, 45, 60];
+
+        this._durationButtons.forEach((btn, idx) => {
+            if (durations[idx] === currentDuration) {
+                btn.add_style_class_name('wellbeing-duration-active');
+            } else {
+                btn.remove_style_class_name('wellbeing-duration-active');
+            }
+        });
+    }
+
+    _updateStatsView() {
+        // Always show weekly view
+        const data = this._getStatsData('weekly');
+        this._drawMiniGraph(data);
+        this._updateStatsSummary(data);
+    }
+
+    _getStatsData(viewType) {
+        const now = new Date();
+        const days = viewType === 'weekly' ? 7 : 30;
+        const data = [];
+
+        for (let i = days - 1; i >= 0; i--) {
+            const date = new Date(now);
+            date.setDate(date.getDate() - i);
+            const dateStr = date.toISOString().split('T')[0];
+
+            const screenTime = this._stats.daily[dateStr] || 0;
+            const pomodoros = this._stats.pomodoros[dateStr] || 0;
+
+            data.push({
+                date: date,
+                dateStr: dateStr,
+                screenTime: screenTime,
+                pomodoros: pomodoros
+            });
+        }
+
+        return data;
+    }
+
+    _drawMiniGraph(data) {
+        // Clear existing graph
+        this._statsGraphBox.destroy_all_children();
+
+        if (data.length === 0) {
+            const noDataLabel = new St.Label({
+                text: 'No data available yet',
+                style_class: 'wellbeing-stats-no-data'
+            });
+            this._statsGraphBox.add_child(noDataLabel);
+            return;
+        }
+
+        // Find max values for scaling
+        const maxScreenTime = Math.max(...data.map(d => d.screenTime), 1);
+        const maxPomodoros = Math.max(...data.map(d => d.pomodoros), 1);
+
+        // Create bar chart
+        const chartBox = new St.BoxLayout({
+            vertical: false,
+            style_class: 'wellbeing-stats-chart-box',
+            x_expand: true
+        });
+
+        data.forEach((day) => {
+            const barContainer = new St.BoxLayout({
+                vertical: true,
+                style_class: 'wellbeing-stats-bar-container',
+                x_expand: true,
+                x_align: Clutter.ActorAlign.CENTER,
+                reactive: true,
+                track_hover: true
+            });
+
+            // Create tooltip with detailed info
+            const hours = Math.floor(day.screenTime / 3600);
+            const minutes = Math.floor((day.screenTime % 3600) / 60);
+            const dateStr = day.date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+            const tooltip = `${dateStr}\n${hours}h ${minutes}m screen time\n${day.pomodoros} focus session${day.pomodoros !== 1 ? 's' : ''}`;
+
+            // Bar area container (fixed height)
+            const barAreaBox = new St.BoxLayout({
+                vertical: true,
+                style_class: 'wellbeing-stats-bar-area',
+                y_expand: true,
+                y_align: Clutter.ActorAlign.END
+            });
+
+            // Pomodoro indicator (small dot overlay) - at top
+            if (day.pomodoros > 0) {
+                const pomodoroSize = Math.min((day.pomodoros / maxPomodoros) * 12 + 4, 16);
+                const pomodoroIndicator = new St.Widget({
+                    style_class: 'wellbeing-stats-pomo-indicator',
+                    style: `width: ${pomodoroSize}px; height: ${pomodoroSize}px;`
+                });
+                barAreaBox.add_child(pomodoroIndicator);
+            }
+
+            // Screen time bar
+            const screenTimeHeight = Math.max((day.screenTime / maxScreenTime) * 80, 2);
+            const screenTimeBar = new St.Widget({
+                style_class: 'wellbeing-stats-bar-screen',
+                style: `height: ${screenTimeHeight}px; width: 100%;`,
+                y_align: Clutter.ActorAlign.END
+            });
+
+            barAreaBox.add_child(screenTimeBar);
+            barContainer.add_child(barAreaBox);
+
+            // Day label (first letter for weekly) - always at bottom
+            const dayLabel = new St.Label({
+                text: ['S', 'M', 'T', 'W', 'T', 'F', 'S'][day.date.getDay()],
+                style_class: 'wellbeing-stats-day-label'
+            });
+            barContainer.add_child(dayLabel);
+
+            // Add hover effect and tooltip
+            let tooltipLabel = null;
+            barContainer.connect('enter-event', () => {
+                barContainer.add_style_class_name('wellbeing-stats-bar-hover');
+
+                // Create and show tooltip
+                tooltipLabel = new St.Label({
+                    text: tooltip,
+                    style_class: 'wellbeing-stats-tooltip',
+                    style: 'text-align: center;'
+                });
+                barContainer.insert_child_at_index(tooltipLabel, 0);
+            });
+
+            barContainer.connect('leave-event', () => {
+                barContainer.remove_style_class_name('wellbeing-stats-bar-hover');
+
+                // Remove tooltip
+                if (tooltipLabel) {
+                    tooltipLabel.destroy();
+                    tooltipLabel = null;
+                }
+            });
+
+            chartBox.add_child(barContainer);
+        });
+
+        this._statsGraphBox.add_child(chartBox);
+
+        // Legend
+        const legendBox = new St.BoxLayout({
+            vertical: false,
+            style_class: 'wellbeing-stats-legend-box'
+        });
+
+        const screenLegend = new St.BoxLayout({ vertical: false, style_class: 'wellbeing-stats-legend-item' });
+        screenLegend.add_child(new St.Widget({ style_class: 'wellbeing-stats-legend-color-screen' }));
+        screenLegend.add_child(new St.Label({ text: 'Screen Time', style_class: 'wellbeing-stats-legend-label' }));
+
+        const pomoLegend = new St.BoxLayout({ vertical: false, style_class: 'wellbeing-stats-legend-item' });
+        pomoLegend.add_child(new St.Widget({ style_class: 'wellbeing-stats-legend-color-pomo' }));
+        pomoLegend.add_child(new St.Label({ text: 'Pomodoros', style_class: 'wellbeing-stats-legend-label' }));
+
+        legendBox.add_child(screenLegend);
+        legendBox.add_child(pomoLegend);
+        this._statsGraphBox.add_child(legendBox);
+    }
+
+    _updateStatsSummary(data) {
+        const totalScreenTime = data.reduce((sum, d) => sum + d.screenTime, 0);
+        const totalPomodoros = data.reduce((sum, d) => sum + d.pomodoros, 0);
+        const avgScreenTime = data.length > 0 ? totalScreenTime / data.length : 0;
+
+        const hours = Math.floor(avgScreenTime / 3600);
+        const minutes = Math.floor((avgScreenTime % 3600) / 60);
+
+        const period = this._statsView === 'weekly' ? 'week' : 'month';
+        this._statsSummaryLabel.text = `Avg: ${hours}h ${minutes}m/day • ${totalPomodoros} focus sessions this ${period}`;
+    }
+
+    _getMotivationalQuote() {
+        const quotes = [
+            '💡 "Focus is the gateway to excellence"',
+            '🌟 "Deep work produces deep results"',
+            '🎯 "Distraction is the enemy of mastery"',
+            '✨ "Small focused steps lead to big achievements"',
+            '🌊 "Flow state is where magic happens"',
+            '🚀 "Your future self will thank you for focusing now"',
+            '🎨 "Creativity thrives in focused silence"',
+            '⚡ "Energy follows attention"',
+            '🧘 "Mindfulness begins with awareness"',
+            '🌱 "Growth happens one focused session at a time"'
+        ];
+        return quotes[Math.floor(Math.random() * quotes.length)];
+    }
+
     _updateUI() {
         const screenTime = this._getDailyScreenTime();
         const pomoStatus = this._getPomoStatus();
 
-        // Panel display: Always show tomato, larger when active
+        // Dynamic panel display with smooth width transitions
         if (this._pomoRunning) {
+            // Active timer: expand to show screen time + tomato + countdown
             this._label.text = `${screenTime}  🍅 ${pomoStatus.short}`;
+            this._label.set_style('min-width: 160px; transition: all 0.3s ease;');
+        } else if (this._pomoRemaining < this._pomoDuration) {
+            // Paused: expand to show screen time + paused time
+            this._label.text = `${screenTime}  ⏸ ${pomoStatus.short}`;
+            this._label.set_style('min-width: 160px; transition: all 0.3s ease;');
         } else {
-            this._label.text = `${screenTime}  🍅`;
+            // Reset/not started: compact - just screen time
+            this._label.text = screenTime;
+            this._label.set_style('min-width: 80px; transition: all 0.3s ease;');
         }
 
-        this._screenLabel.text = `${screenTime}`;
-        this._pomoLabel.text = `${pomoStatus.full}`;
-
-        // Update pomodoro icon based on state
-        if (this._pomoRunning) {
-            this._pomoIcon.icon_name = 'media-playback-start-symbolic';
-        } else {
-            this._pomoIcon.icon_name = 'media-playback-pause-symbolic';
+        // Update motivational quote (only change every 1 hour)
+        const now = Date.now();
+        if (!this._currentQuote || (now - this._lastQuoteChange > 3600000)) { // 3600000ms = 1 hour
+            this._currentQuote = this._getMotivationalQuote();
+            this._lastQuoteChange = now;
         }
+        this._quoteLabel.text = this._currentQuote;
+
+        // Record daily statistics
+        const screenTimeSeconds = this._getDailyScreenTimeSeconds();
+        if (screenTimeSeconds > 0) {
+            this._recordDailyStats(new Date(), screenTimeSeconds);
+        }
+
+        // Update statistics view
+        this._updateStatsView();
 
         // Break reminder (every 30 minutes of screen time)
         if (this._breakReminders) {
@@ -211,22 +589,108 @@ class WellbeingIndicator extends PanelMenu.Button {
         }
     }
 
-    _getDailyScreenTime() {
-        // Read logged in user's session time from loginctl
-        try {
-            // Try to get session uptime using loginctl
-            const [success, stdout] = GLib.spawn_command_line_sync('loginctl show-session $(loginctl | grep $(whoami) | awk \'{print $1}\') -p IdleHint -p IdleSinceHint --value');
+    _getDailyScreenTimeSeconds() {
+        // Helper method to get screen time in seconds
+        const now = new Date();
+        const dateStr = now.toISOString().split('T')[0];
 
-            if (success) {
-                const output = new TextDecoder().decode(stdout).trim();
-                // This would give us idle info, but for simplicity, use journal logs
+        // First, try to get from session history (live tracking)
+        let liveSeconds = 0;
+        try {
+            const homeDir = GLib.get_home_dir();
+            const historyPath = `${homeDir}/.local/share/gnome-shell/session-active-history.json`;
+
+            if (GLib.file_test(historyPath, GLib.FileTest.EXISTS)) {
+                const [success, contents] = GLib.file_get_contents(historyPath);
+
+                if (success) {
+                    const historyData = JSON.parse(new TextDecoder().decode(contents));
+
+                    const midnightToday = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0);
+                    const todayStart = Math.floor(midnightToday.getTime() / 1000);
+                    const currentTime = Math.floor(Date.now() / 1000);
+
+                    let totalActiveSeconds = 0;
+                    let lastActiveStart = null;
+                    let currentState = null;
+
+                    for (const entry of historyData) {
+                        if (entry.wallTimeSecs < todayStart) {
+                            currentState = entry.newState;
+                            continue;
+                        }
+
+                        if (entry.newState === 1) {
+                            if (lastActiveStart === null) {
+                                lastActiveStart = Math.max(entry.wallTimeSecs, todayStart);
+                            }
+                        } else if (entry.newState === 0) {
+                            if (lastActiveStart !== null) {
+                                totalActiveSeconds += (entry.wallTimeSecs - lastActiveStart);
+                                lastActiveStart = null;
+                            }
+                        }
+
+                        currentState = entry.newState;
+                    }
+
+                    if (currentState === 1 && lastActiveStart === null && historyData.length > 0) {
+                        lastActiveStart = todayStart;
+                    }
+
+                    if (lastActiveStart !== null) {
+                        totalActiveSeconds += (currentTime - lastActiveStart);
+                    }
+
+                    liveSeconds = totalActiveSeconds;
+                }
             }
         } catch (e) {
-            // Silent fail
+            log(`Wellbeing Widget: Error calculating live screen time: ${e.message}`);
         }
 
-        // Alternative: Read X11 session time or use journal logs
-        // For now, use system uptime as approximation (most accurate without extra dependencies)
+        // If we have live tracking data, use it. Otherwise fall back to stored data
+        if (liveSeconds > 0) {
+            return liveSeconds;
+        }
+
+        // Fallback: check if we have stored data for today (survives reboots)
+        if (this._stats.daily[dateStr]) {
+            return this._stats.daily[dateStr];
+        }
+
+        return 0;
+    }
+
+    _getDailyScreenTime() {
+        const totalActiveSeconds = this._getDailyScreenTimeSeconds();
+        if (totalActiveSeconds > 0) {
+            const hours = Math.floor(totalActiveSeconds / 3600);
+            const minutes = Math.floor((totalActiveSeconds % 3600) / 60);
+            return `${hours}h ${minutes}m`;
+        }
+
+        // Fallback: Calculate session time from boot
+        try {
+            const [success, stdout] = GLib.spawn_command_line_sync(
+                'bash -c "date -d \\"$(who -b | awk \'{print $3, $4}\')\\\" +%s 2>/dev/null"'
+            );
+
+            if (success) {
+                const bootEpoch = parseInt(new TextDecoder().decode(stdout).trim());
+                if (!isNaN(bootEpoch)) {
+                    const now = Math.floor(Date.now() / 1000);
+                    const sessionSeconds = now - bootEpoch;
+                    const hours = Math.floor(sessionSeconds / 3600);
+                    const minutes = Math.floor((sessionSeconds % 3600) / 60);
+                    return `${hours}h ${minutes}m`;
+                }
+            }
+        } catch (e) {
+            // Continue to next fallback
+        }
+
+        // System uptime fallback
         try {
             const [success, contents] = GLib.file_get_contents('/proc/uptime');
             if (success) {
@@ -237,10 +701,10 @@ class WellbeingIndicator extends PanelMenu.Button {
                 return `${hours}h ${minutes}m`;
             }
         } catch (e) {
-            // Fallback
+            // Final fallback below
         }
 
-        // Final fallback
+        // Absolute fallback
         const now = new Date();
         const hours = Math.floor(now.getHours() * 0.6);
         const minutes = Math.floor(now.getMinutes() * 0.4);
@@ -250,17 +714,58 @@ class WellbeingIndicator extends PanelMenu.Button {
     _startPomo() {
         if (this._pomoRunning) return;
         this._pomoRunning = true;
-        Main.notify('Focus Session Started', 'Stay concentrated! Timer is running.');
+
+        if (this._settings.get_boolean('visual-alerts')) {
+            Main.notify('Focus Session Started', 'Stay concentrated! Timer is running.');
+        }
+
         this._pomoTimer = GLib.timeout_add_seconds(GLib.PRIORITY_DEFAULT, 1, () => {
             this._pomoRemaining--;
             this._updateUI();
+
             if (this._pomoRemaining <= 0) {
-                Main.notify('Focus Session Complete', 'Great work! Take a 5-minute break.');
-                this._resetPomo();
+                this._pomoCompleted();
                 return GLib.SOURCE_REMOVE;
             }
             return GLib.SOURCE_CONTINUE;
         });
+    }
+
+    _pomoCompleted() {
+        this._pomoCount++;
+
+        // Record Pomodoro in statistics
+        this._recordPomodoro(new Date());
+
+        // Play sound alert
+        if (this._settings.get_boolean('sound-alerts')) {
+            try {
+                GLib.spawn_command_line_async('canberra-gtk-play -i complete');
+            } catch (e) {
+                // Fallback to bell sound
+                try {
+                    GLib.spawn_command_line_async('paplay /usr/share/sounds/freedesktop/stereo/complete.oga');
+                } catch (e2) {
+                    // Silent fail
+                }
+            }
+        }
+
+        // Visual alert
+        if (this._settings.get_boolean('visual-alerts')) {
+            const isLongBreak = (this._pomoCount % 4 === 0);
+            const breakDuration = isLongBreak
+                ? this._settings.get_int('long-break-duration')
+                : this._settings.get_int('short-break-duration');
+
+            const breakType = isLongBreak ? 'Long Break' : 'Short Break';
+            Main.notify(
+                '🎉 Focus Session Complete!',
+                `Great work! Take a ${breakDuration}-minute ${breakType.toLowerCase()}.`
+            );
+        }
+
+        this._resetPomo();
     }
 
     _pausePomo() {
@@ -274,7 +779,8 @@ class WellbeingIndicator extends PanelMenu.Button {
 
     _resetPomo() {
         this._pausePomo();
-        this._pomoRemaining = 25 * 60;
+        this._pomoDuration = this._settings.get_int('pomodoro-duration') * 60;
+        this._pomoRemaining = this._pomoDuration;
         this._updateUI();
     }
 
@@ -284,9 +790,98 @@ class WellbeingIndicator extends PanelMenu.Button {
         const timeStr = `${minutes}:${seconds.toString().padStart(2, '0')}`;
         const short = timeStr;
         const full = this._pomoRunning
-            ? `${timeStr} remaining`
-            : `${timeStr} (Ready)`;
+            ? `${timeStr}`
+            : (this._pomoRemaining === this._pomoDuration ? 'Ready' : `${timeStr} (Paused)`);
         return { short, full };
+    }
+
+    _playZenMusic() {
+        if (this._musicPlaying) return;
+
+        try {
+            // Free lofi/zen radio streams (no downloads needed)
+            const streams = [
+                'https://streams.calmradio.com/api/39/128/stream',  // Calm Radio - Meditation
+                'http://stream.zenradio.com/radios/relaxing.mp3',   // Zen Radio
+                'https://chillhop.com/live',                        // Chillhop Live
+            ];
+
+            const stream = streams[0]; // Use first stream for now
+
+            // Use mpv with higher volume (80%)
+            this._musicProcess = GLib.spawn_command_line_async(`mpv --no-video --volume=80 "${stream}"`);
+
+            this._musicPlaying = true;
+            this._startMusicAnimation();
+
+            if (this._settings.get_boolean('visual-alerts')) {
+                Main.notify('🎵 Zen Music', 'Relax and focus with calming sounds');
+            }
+        } catch (e) {
+            log(`Wellbeing Widget: Could not play music: ${e.message}`);
+            Main.notify('🎵 Zen Music', 'Please install mpv: sudo dnf install mpv');
+        }
+    }
+
+    _stopZenMusic() {
+        if (!this._musicPlaying) return;
+
+        try {
+            // Kill mpv process
+            GLib.spawn_command_line_async('pkill -f "mpv.*stream"');
+            this._musicPlaying = false;
+            this._stopMusicAnimation();
+        } catch (e) {
+            log(`Wellbeing Widget: Error stopping music: ${e.message}`);
+        }
+    }
+
+    _startMusicAnimation() {
+        // Real equalizer animation (like music player)
+        this._musicAnimationState = 0;
+
+        this._musicAnimationTimer = GLib.timeout_add(GLib.PRIORITY_DEFAULT, 150, () => {
+            if (!this._musicPlaying) {
+                return GLib.SOURCE_REMOVE;
+            }
+
+            // Priority: Only show music if timer is NOT running
+            if (this._pomoRunning || this._pomoRemaining < this._pomoDuration) {
+                return GLib.SOURCE_CONTINUE; // Timer has priority, keep animation alive but don't show
+            }
+
+            // Animated equalizer bars (3 bars with different heights)
+            const bars = [
+                ['▁', '▂', '▃', '▄', '▅', '▆', '▇', '█'],  // Bar 1
+                ['▁', '▂', '▃', '▄', '▅', '▆', '▇', '█'],  // Bar 2
+                ['▁', '▂', '▃', '▄', '▅', '▆', '▇', '█']   // Bar 3
+            ];
+
+            // Create realistic wave pattern
+            const phase1 = Math.sin(this._musicAnimationState * 0.3) * 3.5 + 3.5;
+            const phase2 = Math.sin(this._musicAnimationState * 0.4 + 1) * 3.5 + 3.5;
+            const phase3 = Math.sin(this._musicAnimationState * 0.5 + 2) * 3.5 + 3.5;
+
+            const bar1 = bars[0][Math.floor(phase1)];
+            const bar2 = bars[1][Math.floor(phase2)];
+            const bar3 = bars[2][Math.floor(phase3)];
+
+            const screenTime = this._getDailyScreenTime();
+            this._label.text = `${screenTime}  ${bar1}${bar2}${bar3} Zen`;
+            this._label.set_style('min-width: 160px; transition: none;'); // No transition for smooth animation
+
+            this._musicAnimationState++;
+            return GLib.SOURCE_CONTINUE;
+        });
+    }
+
+    _stopMusicAnimation() {
+        if (this._musicAnimationTimer) {
+            GLib.source_remove(this._musicAnimationTimer);
+            this._musicAnimationTimer = null;
+        }
+        // Reset panel display
+        this._updateUI();
     }
 
     destroy() {
@@ -297,6 +892,13 @@ class WellbeingIndicator extends PanelMenu.Button {
         if (this._pomoTimer) {
             GLib.source_remove(this._pomoTimer);
             this._pomoTimer = null;
+        }
+        if (this._musicAnimationTimer) {
+            GLib.source_remove(this._musicAnimationTimer);
+            this._musicAnimationTimer = null;
+        }
+        if (this._musicPlaying) {
+            this._stopZenMusic();
         }
         super.destroy();
     }
