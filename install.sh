@@ -13,8 +13,8 @@ echo ""
 
 # Check GNOME Shell version
 GNOME_VERSION=$(gnome-shell --version | grep -oP '\d+' | head -1)
-if [ "$GNOME_VERSION" -lt 49 ]; then
-    echo "❌ Error: This extension requires GNOME 49 or higher."
+if [ "$GNOME_VERSION" -lt 45 ]; then
+    echo "❌ Error: This extension requires GNOME 45 or higher."
     echo "   Your version: $GNOME_VERSION"
     exit 1
 fi
