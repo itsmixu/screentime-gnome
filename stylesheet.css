@@ -1,19 +1,19 @@
 /* Wellbeing Widget - Modern Vibrant Design */
 
-/* Panel Box Container - Solid vibrant purple/blue gradient */
+/* Panel Box Container - Soft sage green zen theme */
 .wellbeing-panel-box {
   spacing: 8px;
   padding: 4px 12px;
-  background: linear-gradient(135deg, rgba(102, 126, 234, 0.95) 0%, rgba(118, 75, 162, 0.95) 100%);
+  background: linear-gradient(135deg, rgba(143, 164, 138, 0.98) 0%, rgba(96, 125, 98, 0.98) 100%);
   border-radius: 18px;
-  box-shadow: 0 3px 12px rgba(102, 126, 234, 0.5);
+  box-shadow: 0 3px 12px rgba(143, 164, 138, 0.5);
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   backdrop-filter: blur(10px);
 }
 
 .wellbeing-panel-box:hover {
-  background: linear-gradient(135deg, rgba(90, 103, 216, 1) 0%, rgba(107, 63, 160, 1) 100%);
-  box-shadow: 0 5px 18px rgba(102, 126, 234, 0.6);
+  background: linear-gradient(135deg, rgba(143, 164, 138, 1) 0%, rgba(96, 125, 98, 1) 100%);
+  box-shadow: 0 5px 18px rgba(143, 164, 138, 0.6);
   transform: translateY(-1px) scale(1.02);
 }
 
@@ -25,7 +25,7 @@
   margin: 0;
 }
 
-/* Panel Label - Larger, brighter text */
+/* Panel Label - Larger, brighter text with proper width */
 .wellbeing-panel-label {
   color: rgba(255, 255, 255, 1);
   font-weight: 700;
@@ -34,18 +34,18 @@
   padding: 0;
   margin: 0;
   text-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
-  min-width: 90px;
+  min-width: 135px;
 }
 
-/* Menu Container - Solid background with blur effect */
+/* Menu Container - Opaque sage-tinted background */
 .wellbeing-menu {
   min-width: 350px;
   padding: 16px;
-  background: linear-gradient(180deg, rgba(26, 32, 44, 0.96) 0%, rgba(20, 25, 35, 0.98) 100%);
+  background: linear-gradient(180deg, rgba(26, 32, 30, 0.99) 0%, rgba(20, 25, 23, 1) 100%);
   border-radius: 18px;
-  box-shadow: 0 12px 36px rgba(0, 0, 0, 0.6), 0 0 0 1px rgba(102, 126, 234, 0.3);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  backdrop-filter: blur(20px);
+  box-shadow: 0 12px 36px rgba(0, 0, 0, 0.7), 0 0 0 1px rgba(143, 164, 138, 0.4);
+  border: 1px solid rgba(143, 164, 138, 0.2);
+  backdrop-filter: blur(25px);
   animation: menuSlideIn 0.25s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
@@ -60,41 +60,50 @@
   }
 }
 
-/* Header Section - Vibrant animated banner */
-.wellbeing-header {
+/* Combined Header + Quote Section */
+.wellbeing-header-quote-section {
   padding: 16px 18px;
-  margin-bottom: 12px;
-  background: linear-gradient(135deg, rgba(102, 126, 234, 0.2) 0%, rgba(118, 75, 162, 0.18) 100%);
+  margin: 8px 0;
+  background: linear-gradient(135deg, rgba(143, 164, 138, 0.25) 0%, rgba(96, 125, 98, 0.22) 100%);
   border-radius: 14px;
-  border: 1px solid rgba(102, 126, 234, 0.35);
-  animation: headerPulse 3s ease-in-out infinite;
+  border: 1px solid rgba(143, 164, 138, 0.5);
+  animation: headerPulse 2s ease-in-out infinite;
+  box-shadow: 0 0 20px rgba(143, 164, 138, 0.3);
 }
 
 @keyframes headerPulse {
   0%, 100% {
-    box-shadow: 0 0 15px rgba(102, 126, 234, 0.2);
+    box-shadow: 0 0 20px rgba(143, 164, 138, 0.3);
+    border-color: rgba(143, 164, 138, 0.5);
   }
   50% {
-    box-shadow: 0 0 25px rgba(102, 126, 234, 0.4);
+    box-shadow: 0 0 35px rgba(143, 164, 138, 0.6), 0 0 15px rgba(96, 125, 98, 0.4);
+    border-color: rgba(143, 164, 138, 0.8);
   }
 }
 
-.wellbeing-header-box {
+.wellbeing-header-quote-box {
+  spacing: 10px;
+}
+
+.wellbeing-header-title-box {
   spacing: 12px;
 }
 
 .wellbeing-header-icon {
-  color: rgba(102, 126, 234, 1);
+  color: rgba(143, 164, 138, 1);
   margin: 0;
-  animation: iconBounce 2s ease-in-out infinite;
+  animation: iconGlow 2s ease-in-out infinite;
 }
 
-@keyframes iconBounce {
+@keyframes iconGlow {
   0%, 100% {
     transform: scale(1);
+    filter: drop-shadow(0 0 3px rgba(143, 164, 138, 0.5));
   }
   50% {
-    transform: scale(1.1);
+    transform: scale(1.15);
+    filter: drop-shadow(0 0 8px rgba(143, 164, 138, 0.9));
   }
 }
 
@@ -106,15 +115,15 @@
   letter-spacing: 0.3px;
 }
 
-/* Stats Display - Animated cards with better opacity */
+/* Stats Display - Animated cards with high opacity */
 .wellbeing-stat-item {
   padding: 14px 16px;
   margin: 6px 0;
   border-radius: 12px;
-  background: linear-gradient(135deg, rgba(45, 55, 72, 0.75) 0%, rgba(35, 45, 62, 0.8) 100%);
-  border: 1px solid rgba(102, 126, 234, 0.3);
+  background: linear-gradient(135deg, rgba(45, 55, 50, 0.95) 0%, rgba(35, 45, 40, 0.98) 100%);
+  border: 1px solid rgba(143, 164, 138, 0.4);
   transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
-  box-shadow: 0 3px 6px rgba(0, 0, 0, 0.3);
+  box-shadow: 0 3px 6px rgba(0, 0, 0, 0.4);
   animation: statFadeIn 0.3s ease-out forwards;
   opacity: 0;
 }
@@ -131,9 +140,9 @@
 }
 
 .wellbeing-stat-item:hover {
-  background: linear-gradient(135deg, rgba(60, 70, 87, 0.9) 0%, rgba(50, 60, 77, 0.95) 100%);
-  border-color: rgba(102, 126, 234, 0.5);
-  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+  background: linear-gradient(135deg, rgba(60, 70, 65, 0.95) 0%, rgba(50, 60, 55, 0.98) 100%);
+  border-color: rgba(143, 164, 138, 0.6);
+  box-shadow: 0 4px 12px rgba(143, 164, 138, 0.3);
   transform: translateX(4px) scale(1.02);
 }
 
@@ -142,7 +151,7 @@
 }
 
 .wellbeing-stat-icon {
-  color: rgba(102, 126, 234, 1);
+  color: rgba(143, 164, 138, 1);
   margin: 0;
 }
 
@@ -153,14 +162,14 @@
   text-shadow: 0 1px 3px rgba(0, 0, 0, 0.5);
 }
 
-/* Menu Items - Animated action buttons with better contrast */
+/* Menu Items - Animated action buttons with high opacity */
 .popup-menu-item {
   border-radius: 11px;
   padding: 12px 16px;
   margin: 4px 0;
   transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
-  background: linear-gradient(135deg, rgba(45, 55, 72, 0.65) 0%, rgba(35, 45, 62, 0.7) 100%);
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: linear-gradient(135deg, rgba(45, 55, 50, 0.9) 0%, rgba(35, 45, 40, 0.95) 100%);
+  border: 1px solid rgba(143, 164, 138, 0.15);
   animation: buttonFadeIn 0.3s ease-out forwards;
   opacity: 0;
 }
@@ -177,15 +186,15 @@
 }
 
 .popup-menu-item:hover {
-  background: linear-gradient(135deg, rgba(102, 126, 234, 0.4) 0%, rgba(118, 75, 162, 0.35) 100%);
-  border-color: rgba(102, 126, 234, 0.6);
-  box-shadow: 0 3px 10px rgba(102, 126, 234, 0.4);
+  background: linear-gradient(135deg, rgba(143, 164, 138, 0.4) 0%, rgba(96, 125, 98, 0.35) 100%);
+  border-color: rgba(143, 164, 138, 0.6);
+  box-shadow: 0 3px 10px rgba(143, 164, 138, 0.4);
   transform: translateX(3px) scale(1.02);
 }
 
 .popup-menu-item:active {
-  background: linear-gradient(135deg, rgba(102, 126, 234, 0.5) 0%, rgba(118, 75, 162, 0.45) 100%);
-  border-color: rgba(102, 126, 234, 0.8);
+  background: linear-gradient(135deg, rgba(143, 164, 138, 0.5) 0%, rgba(96, 125, 98, 0.45) 100%);
+  border-color: rgba(143, 164, 138, 0.8);
   transform: scale(0.97);
 }
 
@@ -203,7 +212,7 @@
 
 /* Menu item icons */
 .popup-menu-item StIcon {
-  color: rgba(102, 126, 234, 1);
+  color: rgba(143, 164, 138, 1);
   icon-size: 18px;
 }
 
@@ -214,7 +223,7 @@
 
 .popup-separator-menu-item .popup-separator-menu-item-separator {
   height: 1px;
-  background: linear-gradient(90deg, transparent 0%, rgba(102, 126, 234, 0.3) 50%, transparent 100%);
+  background: linear-gradient(90deg, transparent 0%, rgba(143, 164, 138, 0.3) 50%, transparent 100%);
   margin: 0;
 }
 
@@ -230,18 +239,18 @@
 }
 
 .toggle-switch:checked {
-  background: linear-gradient(135deg, rgba(102, 126, 234, 1) 0%, rgba(118, 75, 162, 1) 100%);
-  border-color: rgba(102, 126, 234, 1);
-  box-shadow: 0 0 15px rgba(102, 126, 234, 0.6), inset 0 1px 3px rgba(255, 255, 255, 0.3);
+  background: linear-gradient(135deg, rgba(143, 164, 138, 1) 0%, rgba(96, 125, 98, 1) 100%);
+  border-color: rgba(143, 164, 138, 1);
+  box-shadow: 0 0 15px rgba(143, 164, 138, 0.6), inset 0 1px 3px rgba(255, 255, 255, 0.3);
   animation: toggleGlow 1.5s ease-in-out infinite;
 }
 
 @keyframes toggleGlow {
   0%, 100% {
-    box-shadow: 0 0 15px rgba(102, 126, 234, 0.6), inset 0 1px 3px rgba(255, 255, 255, 0.3);
+    box-shadow: 0 0 15px rgba(143, 164, 138, 0.6), inset 0 1px 3px rgba(255, 255, 255, 0.3);
   }
   50% {
-    box-shadow: 0 0 20px rgba(102, 126, 234, 0.8), inset 0 1px 3px rgba(255, 255, 255, 0.3);
+    box-shadow: 0 0 20px rgba(143, 164, 138, 0.8), inset 0 1px 3px rgba(255, 255, 255, 0.3);
   }
 }
 
@@ -253,7 +262,7 @@
 
 /* Icon in switch menu item */
 .popup-menu-icon {
-  color: rgba(102, 126, 234, 1);
+  color: rgba(143, 164, 138, 1);
   margin-right: 10px;
   icon-size: 18px;
 }
@@ -314,4 +323,519 @@
   .toggle-switch-label {
     color: rgba(30, 30, 35, 0.9);
   }
+}
+
+/* Large stat label (for main time displays) */
+.wellbeing-stat-label-large {
+  font-size: 18px;
+  font-weight: 700;
+  color: rgba(255, 255, 255, 1);
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.6);
+}
+
+/* Duration Selector Section */
+.wellbeing-section-header {
+  font-size: 13px;
+  font-weight: 700;
+  color: rgba(255, 255, 255, 1);
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+  padding: 10px 12px 6px 12px;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.6);
+  background: linear-gradient(135deg, rgba(143, 164, 138, 0.18) 0%, rgba(96, 125, 98, 0.15) 100%);
+  border-radius: 8px;
+  min-width: 100%;
+  max-width: 100%;
+}
+
+.wellbeing-duration-box {
+  spacing: 8px;
+  padding: 8px;
+}
+
+.wellbeing-duration-button {
+  padding: 10px 16px;
+  border-radius: 10px;
+  background: linear-gradient(135deg, rgba(45, 55, 50, 0.95) 0%, rgba(35, 45, 40, 0.98) 100%);
+  border: 2px solid rgba(143, 164, 138, 0.4);
+  color: rgba(255, 255, 255, 0.95);
+  font-weight: 600;
+  font-size: 13px;
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  min-width: 60px;
+}
+
+.wellbeing-duration-button:hover {
+  background: linear-gradient(135deg, rgba(143, 164, 138, 0.3) 0%, rgba(96, 125, 98, 0.25) 100%);
+  border-color: rgba(143, 164, 138, 0.6);
+  box-shadow: 0 3px 8px rgba(143, 164, 138, 0.3);
+  transform: translateY(-2px);
+}
+
+.wellbeing-duration-button:active {
+  transform: scale(0.95);
+  box-shadow: 0 1px 3px rgba(143, 164, 138, 0.4);
+}
+
+.wellbeing-duration-button.wellbeing-duration-active {
+  background: linear-gradient(135deg, rgba(143, 164, 138, 1) 0%, rgba(96, 125, 98, 1) 100%);
+  border-color: rgba(143, 164, 138, 1);
+  color: rgba(255, 255, 255, 1);
+  box-shadow: 0 4px 12px rgba(143, 164, 138, 0.6), inset 0 1px 3px rgba(255, 255, 255, 0.3);
+  transform: translateY(-1px);
+}
+
+.wellbeing-duration-button.wellbeing-duration-active:hover {
+  background: linear-gradient(135deg, rgba(130, 150, 125, 1) 0%, rgba(85, 115, 90, 1) 100%);
+  transform: translateY(-2px);
+}
+
+/* Statistics Section */
+.wellbeing-stats-header-box {
+  spacing: 16px;
+  padding: 8px 0;
+}
+
+.wellbeing-stats-toggle-box {
+  spacing: 6px;
+}
+
+.wellbeing-stats-toggle-button {
+  padding: 6px 14px;
+  border-radius: 8px;
+  background: linear-gradient(135deg, rgba(45, 55, 50, 0.7) 0%, rgba(35, 45, 40, 0.75) 100%);
+  border: 1px solid rgba(143, 164, 138, 0.3);
+  color: rgba(255, 255, 255, 0.8);
+  font-weight: 600;
+  font-size: 12px;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  min-width: 50px;
+}
+
+.wellbeing-stats-toggle-button:hover {
+  background: linear-gradient(135deg, rgba(143, 164, 138, 0.3) 0%, rgba(96, 125, 98, 0.25) 100%);
+  border-color: rgba(143, 164, 138, 0.5);
+  transform: scale(1.05);
+}
+
+.wellbeing-stats-toggle-button.wellbeing-stats-toggle-active {
+  background: linear-gradient(135deg, rgba(143, 164, 138, 0.85) 0%, rgba(96, 125, 98, 0.85) 100%);
+  border-color: rgba(143, 164, 138, 1);
+  color: rgba(255, 255, 255, 1);
+  box-shadow: 0 2px 8px rgba(143, 164, 138, 0.4);
+}
+
+/* Motivational Quote Section */
+.wellbeing-quote-item {
+  padding: 16px 20px;
+  margin: 8px 0;
+  border-radius: 12px;
+  background: linear-gradient(135deg, rgba(143, 164, 138, 0.18) 0%, rgba(96, 125, 98, 0.15) 100%);
+  border: 1px solid rgba(143, 164, 138, 0.35);
+}
+
+.wellbeing-quote-label-main {
+  font-size: 14px;
+  font-weight: 600;
+  font-style: italic;
+  color: rgba(255, 255, 255, 0.95);
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
+  line-height: 1.6;
+  text-align: center;
+}
+
+.wellbeing-quote-label-compact {
+  font-size: 13px;
+  font-weight: 500;
+  font-style: italic;
+  color: rgba(255, 255, 255, 0.85);
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.5);
+  line-height: 1.5;
+  text-align: center;
+  margin-top: 2px;
+}
+
+/* Merged Focus Session Section */
+.wellbeing-focus-section {
+  padding: 14px 16px;
+  margin: 8px 0;
+  border-radius: 12px;
+  background: linear-gradient(135deg, rgba(255, 140, 0, 0.12) 0%, rgba(255, 99, 71, 0.1) 100%);
+  border: 1px solid rgba(255, 140, 0, 0.35);
+  animation: focusPulse 3s ease-in-out infinite;
+}
+
+@keyframes focusPulse {
+  0%, 100% {
+    border-color: rgba(255, 140, 0, 0.35);
+    box-shadow: 0 0 0px transparent;
+  }
+  50% {
+    border-color: rgba(255, 140, 0, 0.55);
+    box-shadow: 0 0 15px rgba(255, 140, 0, 0.3);
+  }
+}
+
+.wellbeing-focus-main-box {
+  spacing: 12px;
+}
+
+.wellbeing-focus-title {
+  font-size: 16px;
+  font-weight: 700;
+  color: rgba(255, 255, 255, 1);
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.6);
+  text-align: center;
+  padding-bottom: 4px;
+}
+
+.wellbeing-duration-box-inline {
+  spacing: 8px;
+}
+
+.wellbeing-duration-button-compact {
+  padding: 6px 12px;
+  border-radius: 8px;
+  background: linear-gradient(135deg, rgba(45, 55, 72, 0.8) 0%, rgba(35, 45, 62, 0.85) 100%);
+  border: 2px solid rgba(255, 140, 0, 0.3);
+  color: rgba(255, 255, 255, 0.9);
+  font-weight: 600;
+  font-size: 12px;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  min-width: 50px;
+}
+
+.wellbeing-duration-button-compact:hover {
+  background: linear-gradient(135deg, rgba(255, 140, 0, 0.3) 0%, rgba(255, 99, 71, 0.25) 100%);
+  border-color: rgba(255, 140, 0, 0.6);
+  box-shadow: 0 3px 8px rgba(255, 140, 0, 0.3);
+  transform: translateY(-2px);
+}
+
+.wellbeing-duration-button-compact:active {
+  transform: scale(0.95);
+  box-shadow: 0 1px 3px rgba(255, 140, 0, 0.4);
+}
+
+.wellbeing-duration-button-compact.wellbeing-duration-active {
+  background: linear-gradient(135deg, rgba(255, 140, 0, 1) 0%, rgba(255, 99, 71, 1) 100%);
+  border-color: rgba(255, 140, 0, 1);
+  color: rgba(255, 255, 255, 1);
+  box-shadow: 0 4px 12px rgba(255, 140, 0, 0.6), inset 0 1px 3px rgba(255, 255, 255, 0.3);
+  transform: translateY(-1px);
+}
+
+.wellbeing-duration-button-compact.wellbeing-duration-active:hover {
+  background: linear-gradient(135deg, rgba(255, 120, 0, 1) 0%, rgba(255, 79, 51, 1) 100%);
+  transform: translateY(-2px);
+}
+
+.wellbeing-focus-controls-box {
+  spacing: 8px;
+}
+
+.wellbeing-pomo-button-inline {
+  padding: 8px 14px;
+  border-radius: 8px;
+  background: linear-gradient(135deg, rgba(45, 55, 72, 0.8) 0%, rgba(35, 45, 62, 0.85) 100%);
+  border: 2px solid rgba(255, 140, 0, 0.3);
+  color: rgba(255, 255, 255, 0.9);
+  font-weight: 600;
+  font-size: 12px;
+  transition: all 0.2s ease;
+  min-width: 70px;
+}
+
+.wellbeing-pomo-button-inline:hover {
+  background: linear-gradient(135deg, rgba(255, 140, 0, 0.3) 0%, rgba(255, 99, 71, 0.25) 100%);
+  border-color: rgba(255, 140, 0, 0.6);
+  transform: scale(1.05);
+}
+
+.wellbeing-pomo-button-inline:active {
+  transform: scale(0.95);
+}
+
+.wellbeing-pomo-button-inline.wellbeing-button-start:hover {
+  border-color: rgba(0, 200, 100, 0.6);
+  box-shadow: 0 0 10px rgba(0, 200, 100, 0.3);
+}
+
+.wellbeing-pomo-button-inline.wellbeing-button-pause:hover {
+  border-color: rgba(255, 200, 0, 0.6);
+  box-shadow: 0 0 10px rgba(255, 200, 0, 0.3);
+}
+
+.wellbeing-pomo-button-inline.wellbeing-button-reset:hover {
+  border-color: rgba(255, 100, 100, 0.6);
+  box-shadow: 0 0 10px rgba(255, 100, 100, 0.3);
+}
+
+/* Compact Pomodoro Section */
+.wellbeing-pomo-section {
+  padding: 12px 16px;
+  margin: 6px 0;
+  border-radius: 12px;
+  background: linear-gradient(135deg, rgba(45, 55, 50, 0.95) 0%, rgba(35, 45, 40, 0.98) 100%);
+  border: 1px solid rgba(143, 164, 138, 0.4);
+}
+
+.wellbeing-pomo-controls-container {
+  spacing: 16px;
+}
+
+.wellbeing-pomo-label-box {
+  spacing: 8px;
+  min-width: 120px;
+}
+
+.wellbeing-pomo-title-icon {
+  color: rgba(255, 140, 0, 1);
+}
+
+.wellbeing-pomo-title-label {
+  font-size: 15px;
+  font-weight: 700;
+  color: rgba(255, 255, 255, 1);
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.6);
+}
+
+.wellbeing-pomo-buttons-box {
+  spacing: 6px;
+}
+
+.wellbeing-pomo-button {
+  padding: 8px 14px;
+  border-radius: 8px;
+  background: linear-gradient(135deg, rgba(45, 55, 50, 0.95) 0%, rgba(35, 45, 40, 0.98) 100%);
+  border: 2px solid rgba(143, 164, 138, 0.4);
+  color: rgba(255, 255, 255, 0.95);
+  font-weight: 600;
+  font-size: 12px;
+  transition: all 0.2s ease;
+  min-width: 70px;
+}
+
+.wellbeing-pomo-button:hover {
+  background: linear-gradient(135deg, rgba(143, 164, 138, 0.3) 0%, rgba(96, 125, 98, 0.25) 100%);
+  border-color: rgba(143, 164, 138, 0.6);
+  transform: scale(1.05);
+}
+
+.wellbeing-pomo-button:active {
+  transform: scale(0.95);
+}
+
+.wellbeing-pomo-button-start:hover {
+  border-color: rgba(0, 200, 100, 0.6);
+}
+
+.wellbeing-pomo-button-pause:hover {
+  border-color: rgba(255, 200, 0, 0.6);
+}
+
+.wellbeing-pomo-button-reset:hover {
+  border-color: rgba(255, 100, 100, 0.6);
+}
+
+/* Zen Music Section */
+.wellbeing-music-section {
+  padding: 12px 16px;
+  margin: 6px 0;
+  border-radius: 12px;
+  background: linear-gradient(135deg, rgba(75, 0, 130, 0.2) 0%, rgba(128, 0, 128, 0.15) 100%);
+  border: 1px solid rgba(186, 85, 211, 0.4);
+}
+
+.wellbeing-music-container {
+  spacing: 16px;
+}
+
+.wellbeing-music-label-box {
+  spacing: 8px;
+  min-width: 120px;
+}
+
+.wellbeing-music-icon {
+  color: rgba(186, 85, 211, 1);
+}
+
+.wellbeing-music-title-label {
+  font-size: 15px;
+  font-weight: 700;
+  color: rgba(255, 255, 255, 1);
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.6);
+}
+
+.wellbeing-music-controls-box {
+  spacing: 6px;
+}
+
+.wellbeing-music-button {
+  padding: 8px 14px;
+  border-radius: 8px;
+  background: linear-gradient(135deg, rgba(75, 0, 130, 0.3) 0%, rgba(128, 0, 128, 0.25) 100%);
+  border: 2px solid rgba(186, 85, 211, 0.4);
+  color: rgba(255, 255, 255, 0.95);
+  font-weight: 600;
+  font-size: 12px;
+  transition: all 0.2s ease;
+  min-width: 70px;
+}
+
+.wellbeing-music-button:hover {
+  background: linear-gradient(135deg, rgba(186, 85, 211, 0.4) 0%, rgba(147, 112, 219, 0.35) 100%);
+  border-color: rgba(186, 85, 211, 0.7);
+  transform: scale(1.05);
+  box-shadow: 0 0 15px rgba(186, 85, 211, 0.5);
+}
+
+.wellbeing-music-button:active {
+  transform: scale(0.95);
+}
+
+/* Statistics Graph */
+.wellbeing-stats-graph-item {
+  padding: 12px 8px;
+  margin: 8px 0;
+  border-radius: 12px;
+  background: linear-gradient(135deg, rgba(45, 55, 50, 0.9) 0%, rgba(35, 45, 40, 0.95) 100%);
+  border: 1px solid rgba(143, 164, 138, 0.3);
+}
+
+.wellbeing-stats-graph-box {
+  spacing: 12px;
+  padding: 8px;
+}
+
+.wellbeing-stats-chart-box {
+  spacing: 4px;
+  padding: 8px 4px;
+  min-height: 100px;
+}
+
+.wellbeing-stats-bar-container {
+  spacing: 2px;
+  min-width: 20px;
+  max-width: 20px;
+  padding: 2px;
+  border-radius: 6px;
+  transition: background 0.2s ease;
+  min-height: 110px;
+  max-height: 110px;
+}
+
+.wellbeing-stats-bar-container:hover {
+  background: rgba(143, 164, 138, 0.18);
+}
+
+.wellbeing-stats-bar-hover {
+  background: rgba(143, 164, 138, 0.25);
+}
+
+.wellbeing-stats-bar-area {
+  min-height: 85px;
+  spacing: 2px;
+}
+
+/* Tooltip for graph bars */
+.wellbeing-stats-tooltip {
+  font-size: 10px;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 1);
+  background: linear-gradient(135deg, rgba(143, 164, 138, 0.98) 0%, rgba(96, 125, 98, 0.98) 100%);
+  padding: 6px 10px;
+  border-radius: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.6);
+  margin-bottom: 6px;
+  line-height: 1.4;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
+  min-width: 80px;
+}
+
+.wellbeing-stats-bar-screen {
+  background: linear-gradient(180deg, rgba(143, 164, 138, 1) 0%, rgba(143, 164, 138, 0.7) 100%);
+  border-radius: 4px 4px 0 0;
+  min-width: 16px;
+  min-height: 2px;
+  box-shadow: 0 2px 6px rgba(143, 164, 138, 0.4);
+  transition: all 0.3s ease;
+}
+
+.wellbeing-stats-pomo-indicator {
+  background: linear-gradient(135deg, rgba(255, 99, 71, 1) 0%, rgba(255, 140, 0, 1) 100%);
+  border-radius: 50%;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  box-shadow: 0 2px 6px rgba(255, 99, 71, 0.6);
+  margin-bottom: 2px;
+}
+
+.wellbeing-stats-day-label {
+  font-size: 10px;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.7);
+  text-align: center;
+  padding: 4px 0 0 0;
+}
+
+.wellbeing-stats-no-data {
+  font-size: 13px;
+  font-weight: 500;
+  color: rgba(255, 255, 255, 0.6);
+  font-style: italic;
+  padding: 24px;
+  text-align: center;
+}
+
+/* Stats Legend */
+.wellbeing-stats-legend-box {
+  spacing: 16px;
+  padding: 8px 12px;
+  background: rgba(45, 55, 50, 0.5);
+  border-radius: 8px;
+  border: 1px solid rgba(143, 164, 138, 0.2);
+}
+
+.wellbeing-stats-legend-item {
+  spacing: 6px;
+}
+
+.wellbeing-stats-legend-color-screen {
+  width: 16px;
+  height: 16px;
+  border-radius: 4px;
+  background: linear-gradient(135deg, rgba(143, 164, 138, 1) 0%, rgba(143, 164, 138, 0.8) 100%);
+  box-shadow: 0 2px 4px rgba(143, 164, 138, 0.3);
+}
+
+.wellbeing-stats-legend-color-pomo {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, rgba(255, 99, 71, 1) 0%, rgba(255, 140, 0, 1) 100%);
+  box-shadow: 0 2px 4px rgba(255, 99, 71, 0.4);
+  border: 2px solid rgba(255, 255, 255, 0.3);
+}
+
+.wellbeing-stats-legend-label {
+  font-size: 11px;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.8);
+}
+
+/* Stats Summary */
+.wellbeing-stats-summary-item {
+  padding: 10px 12px;
+  margin: 4px 0;
+  border-radius: 10px;
+  background: linear-gradient(135deg, rgba(143, 164, 138, 0.18) 0%, rgba(96, 125, 98, 0.15) 100%);
+  border: 1px solid rgba(143, 164, 138, 0.3);
+}
+
+.wellbeing-stats-summary-label {
+  font-size: 12px;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.95);
+  text-align: center;
 }
