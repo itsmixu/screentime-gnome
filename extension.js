@@ -53,6 +53,8 @@ class WellbeingIndicator extends PanelMenu.Button {
 
         // Statistics tracking
         this._statsView = 'weekly'; // 'weekly' or 'monthly'
+        this._lastStatsSave = 0;
+        this._statsSaveInterval = 60000; // Save stats every 60 seconds
         this._loadStats();
 
         this._buildUI();
@@ -545,8 +547,18 @@ class WellbeingIndicator extends PanelMenu.Button {
         const hours = Math.floor(avgScreenTime / 3600);
         const minutes = Math.floor((avgScreenTime % 3600) / 60);
 
-        const period = this._statsView === 'weekly' ? 'week' : 'month';
-        this._statsSummaryLabel.text = `Avg: ${hours}h ${minutes}m/day • ${totalPomodoros} focus sessions this ${period}`;
+        // Get yesterday data for detailed summary
+        const yesterday = data.length > 1 ? data[data.length - 2] : null;
+
+        let summaryText = `Avg: ${hours}h ${minutes}m/day • ${totalPomodoros} sessions this week`;
+
+        if (yesterday && yesterday.screenTime > 0) {
+            const yHours = Math.floor(yesterday.screenTime / 3600);
+            const yMinutes = Math.floor((yesterday.screenTime % 3600) / 60);
+            summaryText += `\nYesterday: ${yHours}h ${yMinutes}m • ${yesterday.pomodoros} sessions`;
+        }
+
+        this._statsSummaryLabel.text = summaryText;
     }
 
     _getMotivationalQuote() {
@@ -595,14 +607,19 @@ class WellbeingIndicator extends PanelMenu.Button {
                 this._quoteLabel.text = this._currentQuote;
             }
 
-            // Record daily statistics (only when menu is open to reduce I/O)
-            if (this.menu.isOpen) {
+            // Record daily statistics (periodically, or when menu is open)
+            const shouldSaveStats = this.menu.isOpen || (now - this._lastStatsSave > this._statsSaveInterval);
+
+            if (shouldSaveStats) {
                 const screenTimeSeconds = this._getDailyScreenTimeSeconds();
                 if (screenTimeSeconds > 0) {
                     this._recordDailyStats(new Date(), screenTimeSeconds);
+                    this._lastStatsSave = now;
                 }
+            }
 
-                // Update statistics view (only when menu is visible)
+            // Update statistics view (only when menu is visible)
+            if (this.menu.isOpen) {
                 this._updateStatsView();
             }
 

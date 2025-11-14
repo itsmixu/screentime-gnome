@@ -1,19 +1,19 @@
 /* Wellbeing Widget - Modern Vibrant Design */
 
-/* Panel Box Container - Soft sage green zen theme */
+/* Panel Box Container - Soft sage green zen theme with better contrast */
 .wellbeing-panel-box {
   spacing: 8px;
   padding: 4px 12px;
-  background: linear-gradient(135deg, rgba(143, 164, 138, 0.98) 0%, rgba(96, 125, 98, 0.98) 100%);
+  background: linear-gradient(135deg, rgba(80, 110, 75, 1) 0%, rgba(60, 90, 60, 1) 100%);
   border-radius: 18px;
-  box-shadow: 0 3px 12px rgba(143, 164, 138, 0.5);
+  box-shadow: 0 3px 12px rgba(0, 0, 0, 0.6), 0 0 0 1px rgba(255, 255, 255, 0.15);
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   backdrop-filter: blur(10px);
 }
 
 .wellbeing-panel-box:hover {
-  background: linear-gradient(135deg, rgba(143, 164, 138, 1) 0%, rgba(96, 125, 98, 1) 100%);
-  box-shadow: 0 5px 18px rgba(143, 164, 138, 0.6);
+  background: linear-gradient(135deg, rgba(90, 125, 85, 1) 0%, rgba(70, 105, 70, 1) 100%);
+  box-shadow: 0 5px 18px rgba(0, 0, 0, 0.7), 0 0 0 1px rgba(255, 255, 255, 0.25);
   transform: translateY(-1px) scale(1.02);
 }
 
