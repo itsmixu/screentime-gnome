@@ -46,6 +46,11 @@ class WellbeingIndicator extends PanelMenu.Button {
         this._lastQuoteChange = Date.now();
         this._currentQuote = null;
 
+        // Screen time caching (reduce file I/O)
+        this._cachedScreenTime = null;
+        this._lastScreenTimeUpdate = 0;
+        this._screenTimeCacheDuration = 4000; // 4 seconds cache (slightly less than update interval)
+
         // Statistics tracking
         this._statsView = 'weekly'; // 'weekly' or 'monthly'
         this._loadStats();
@@ -95,13 +100,15 @@ class WellbeingIndicator extends PanelMenu.Button {
 
         this._icon = new St.Icon({
             icon_name: 'preferences-system-time-symbolic',
-            style_class: 'system-status-icon wellbeing-panel-icon'
+            style_class: 'system-status-icon wellbeing-panel-icon',
+            accessible_name: 'Screen Time Tracker'
         });
 
         this._label = new St.Label({
             text: 'Loading…',
             y_align: Clutter.ActorAlign.CENTER,
-            style_class: 'wellbeing-panel-label'
+            style_class: 'wellbeing-panel-label',
+            accessible_name: 'Daily Screen Time'
         });
 
         panelBox.add_child(this._icon);
@@ -337,6 +344,21 @@ class WellbeingIndicator extends PanelMenu.Button {
         this._breakToggle.connect('toggled', (_item, state) => {
             this._breakReminders = state;
         });
+
+        // Update stats when menu opens
+        this.menu.connect('open-state-changed', (_menu, open) => {
+            if (open) {
+                // Force cache invalidation and update when menu opens
+                this._cachedScreenTime = null;
+                this._lastScreenTimeUpdate = 0;
+
+                const screenTimeSeconds = this._getDailyScreenTimeSeconds();
+                if (screenTimeSeconds > 0) {
+                    this._recordDailyStats(new Date(), screenTimeSeconds);
+                }
+                this._updateStatsView();
+            }
+        });
     }
 
     _startUpdating() {
@@ -544,47 +566,59 @@ class WellbeingIndicator extends PanelMenu.Button {
     }
 
     _updateUI() {
-        const screenTime = this._getDailyScreenTime();
-        const pomoStatus = this._getPomoStatus();
+        try {
+            const screenTime = this._getDailyScreenTime();
+            const pomoStatus = this._getPomoStatus();
 
-        // Dynamic panel display with smooth width transitions
-        if (this._pomoRunning) {
-            // Active timer: expand to show screen time + tomato + countdown
-            this._label.text = `${screenTime}  🍅 ${pomoStatus.short}`;
-            this._label.set_style('min-width: 160px; transition: all 0.3s ease;');
-        } else if (this._pomoRemaining < this._pomoDuration) {
-            // Paused: expand to show screen time + paused time
-            this._label.text = `${screenTime}  ⏸ ${pomoStatus.short}`;
-            this._label.set_style('min-width: 160px; transition: all 0.3s ease;');
-        } else {
-            // Reset/not started: compact - just screen time
-            this._label.text = screenTime;
-            this._label.set_style('min-width: 80px; transition: all 0.3s ease;');
-        }
+            // Dynamic panel display with smooth width transitions
+            if (this._pomoRunning) {
+                // Active timer: expand to show screen time + tomato + countdown
+                this._label.text = `${screenTime}  🍅 ${pomoStatus.short}`;
+                this._label.set_style('min-width: 160px; transition: all 0.3s ease;');
+            } else if (this._pomoRemaining < this._pomoDuration) {
+                // Paused: expand to show screen time + paused time
+                this._label.text = `${screenTime}  ⏸ ${pomoStatus.short}`;
+                this._label.set_style('min-width: 160px; transition: all 0.3s ease;');
+            } else {
+                // Reset/not started: compact - just screen time
+                this._label.text = screenTime;
+                this._label.set_style('min-width: 80px; transition: all 0.3s ease;');
+            }
 
-        // Update motivational quote (only change every 1 hour)
-        const now = Date.now();
-        if (!this._currentQuote || (now - this._lastQuoteChange > 3600000)) { // 3600000ms = 1 hour
-            this._currentQuote = this._getMotivationalQuote();
-            this._lastQuoteChange = now;
-        }
-        this._quoteLabel.text = this._currentQuote;
+            // Update motivational quote (only change every 1 hour)
+            const now = Date.now();
+            if (!this._currentQuote || (now - this._lastQuoteChange > 3600000)) { // 3600000ms = 1 hour
+                this._currentQuote = this._getMotivationalQuote();
+                this._lastQuoteChange = now;
+            }
+            if (this._quoteLabel) {
+                this._quoteLabel.text = this._currentQuote;
+            }
 
-        // Record daily statistics
-        const screenTimeSeconds = this._getDailyScreenTimeSeconds();
-        if (screenTimeSeconds > 0) {
-            this._recordDailyStats(new Date(), screenTimeSeconds);
-        }
+            // Record daily statistics (only when menu is open to reduce I/O)
+            if (this.menu.isOpen) {
+                const screenTimeSeconds = this._getDailyScreenTimeSeconds();
+                if (screenTimeSeconds > 0) {
+                    this._recordDailyStats(new Date(), screenTimeSeconds);
+                }
 
-        // Update statistics view
-        this._updateStatsView();
+                // Update statistics view (only when menu is visible)
+                this._updateStatsView();
+            }
 
-        // Break reminder (every 30 minutes of screen time)
-        if (this._breakReminders) {
-            const currentTime = Math.floor(Date.now() / 1000);
-            if (currentTime - this._lastBreakNotification > 1800) {
-                Main.notify('Break Time', 'You\'ve been working for a while. Stand up, stretch, and rest your eyes.');
-                this._lastBreakNotification = currentTime;
+            // Break reminder (every 30 minutes)
+            if (this._breakReminders) {
+                const currentTime = Math.floor(Date.now() / 1000);
+                if (currentTime - this._lastBreakNotification > 1800) {
+                    Main.notify('Break Time', 'You\'ve been working for a while. Stand up, stretch, and rest your eyes.');
+                    this._lastBreakNotification = currentTime;
+                }
+            }
+        } catch (e) {
+            // Graceful error handling - don't let exceptions break the timer
+            log(`Wellbeing Widget: Error in _updateUI: ${e.message}`);
+            if (this._label) {
+                this._label.text = 'Error';
             }
         }
     }
@@ -612,32 +646,43 @@ class WellbeingIndicator extends PanelMenu.Button {
 
                     let totalActiveSeconds = 0;
                     let lastActiveStart = null;
-                    let currentState = null;
+                    let lastStateBeforeToday = null;
 
+                    // First pass: find the last state before today
                     for (const entry of historyData) {
                         if (entry.wallTimeSecs < todayStart) {
-                            currentState = entry.newState;
+                            lastStateBeforeToday = entry.newState;
+                        } else {
+                            break;
+                        }
+                    }
+
+                    // If we were active at midnight, start counting from midnight
+                    if (lastStateBeforeToday === 1) {
+                        lastActiveStart = todayStart;
+                    }
+
+                    // Second pass: process today's entries
+                    for (const entry of historyData) {
+                        if (entry.wallTimeSecs < todayStart) {
                             continue;
                         }
 
                         if (entry.newState === 1) {
+                            // Becoming active
                             if (lastActiveStart === null) {
-                                lastActiveStart = Math.max(entry.wallTimeSecs, todayStart);
+                                lastActiveStart = entry.wallTimeSecs;
                             }
                         } else if (entry.newState === 0) {
+                            // Becoming inactive
                             if (lastActiveStart !== null) {
                                 totalActiveSeconds += (entry.wallTimeSecs - lastActiveStart);
                                 lastActiveStart = null;
                             }
                         }
-
-                        currentState = entry.newState;
                     }
 
-                    if (currentState === 1 && lastActiveStart === null && historyData.length > 0) {
-                        lastActiveStart = todayStart;
-                    }
-
+                    // If currently active, add time until now
                     if (lastActiveStart !== null) {
                         totalActiveSeconds += (currentTime - lastActiveStart);
                     }
@@ -663,13 +708,32 @@ class WellbeingIndicator extends PanelMenu.Button {
     }
 
     _getDailyScreenTime() {
+        // Use cached value if available and recent
+        const now = Date.now();
+        if (this._cachedScreenTime && (now - this._lastScreenTimeUpdate < this._screenTimeCacheDuration)) {
+            return this._cachedScreenTime;
+        }
+
+        // Calculate fresh value
         const totalActiveSeconds = this._getDailyScreenTimeSeconds();
+        let result;
+
         if (totalActiveSeconds > 0) {
             const hours = Math.floor(totalActiveSeconds / 3600);
             const minutes = Math.floor((totalActiveSeconds % 3600) / 60);
-            return `${hours}h ${minutes}m`;
+            result = `${hours}h ${minutes}m`;
+        } else {
+            result = this._getFallbackScreenTime();
         }
 
+        // Update cache
+        this._cachedScreenTime = result;
+        this._lastScreenTimeUpdate = now;
+
+        return result;
+    }
+
+    _getFallbackScreenTime() {
         // Fallback: Calculate session time from boot
         try {
             const [success, stdout] = GLib.spawn_command_line_sync(
@@ -704,11 +768,8 @@ class WellbeingIndicator extends PanelMenu.Button {
             // Final fallback below
         }
 
-        // Absolute fallback
-        const now = new Date();
-        const hours = Math.floor(now.getHours() * 0.6);
-        const minutes = Math.floor(now.getMinutes() * 0.4);
-        return `${hours}h ${minutes}m`;
+        // Absolute fallback - show minimal time
+        return '0h 0m';
     }
 
     _startPomo() {

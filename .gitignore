@@ -11,3 +11,4 @@ test-screentime.sh
 progressive-commits.sh
 commit-changes.sh
 RELEASE_CHECKLIST.md
+debug-screentime.js
