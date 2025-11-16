@@ -364,6 +364,12 @@ class WellbeingIndicator extends PanelMenu.Button {
     }
 
     _startUpdating() {
+        // Remove existing timer before creating new one
+        if (this._updateTimer) {
+            GLib.Source.remove(this._updateTimer);
+            this._updateTimer = null;
+        }
+
         this._updateUI();
         this._updateTimer = GLib.timeout_add_seconds(GLib.PRIORITY_DEFAULT, 5, () => {
             this._updateUI();
@@ -797,6 +803,12 @@ class WellbeingIndicator extends PanelMenu.Button {
             Main.notify('Focus Session Started', 'Stay concentrated! Timer is running.');
         }
 
+        // Remove existing timer before creating new one
+        if (this._pomoTimer) {
+            GLib.Source.remove(this._pomoTimer);
+            this._pomoTimer = null;
+        }
+
         this._pomoTimer = GLib.timeout_add_seconds(GLib.PRIORITY_DEFAULT, 1, () => {
             this._pomoRemaining--;
             this._updateUI();
@@ -917,6 +929,12 @@ class WellbeingIndicator extends PanelMenu.Button {
     _startMusicAnimation() {
         // Real equalizer animation (like music player)
         this._musicAnimationState = 0;
+
+        // Remove existing timer before creating new one
+        if (this._musicAnimationTimer) {
+            GLib.Source.remove(this._musicAnimationTimer);
+            this._musicAnimationTimer = null;
+        }
 
         this._musicAnimationTimer = GLib.timeout_add(GLib.PRIORITY_DEFAULT, 150, () => {
             if (!this._musicPlaying) {
