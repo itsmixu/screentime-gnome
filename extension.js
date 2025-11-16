@@ -18,6 +18,7 @@
 import {Extension} from 'resource:///org/gnome/shell/extensions/extension.js';
 import St from 'gi://St';
 import GLib from 'gi://GLib';
+import Gio from 'gi://Gio';
 import GObject from 'gi://GObject';
 import Clutter from 'gi://Clutter';
 import * as Main from 'resource:///org/gnome/shell/ui/main.js';
@@ -48,6 +49,7 @@ class WellbeingIndicator extends PanelMenu.Button {
 
         // Screen time caching (reduce file I/O)
         this._cachedScreenTime = null;
+        this._cachedLiveSeconds = 0; // Async-updated live screen time
         this._lastScreenTimeUpdate = 0;
         this._screenTimeCacheDuration = 4000; // 4 seconds cache (slightly less than update interval)
 
@@ -585,6 +587,9 @@ class WellbeingIndicator extends PanelMenu.Button {
 
     _updateUI() {
         try {
+            // Update live screen time asynchronously in background
+            this._updateLiveScreenTime();
+
             const screenTime = this._getDailyScreenTime();
             const pomoStatus = this._getPomoStatus();
 
@@ -647,18 +652,33 @@ class WellbeingIndicator extends PanelMenu.Button {
     }
 
     _getDailyScreenTimeSeconds() {
-        // Helper method to get screen time in seconds
+        // Helper method to get screen time in seconds (synchronous wrapper)
         const now = new Date();
         const dateStr = now.toISOString().split('T')[0];
 
-        // First, try to get from session history (live tracking)
-        let liveSeconds = 0;
-        try {
-            const homeDir = GLib.get_home_dir();
-            const historyPath = `${homeDir}/.local/share/gnome-shell/session-active-history.json`;
+        // Use cached live seconds if available (updated by async background task)
+        if (this._cachedLiveSeconds !== undefined && this._cachedLiveSeconds > 0) {
+            return this._cachedLiveSeconds;
+        }
 
-            if (GLib.file_test(historyPath, GLib.FileTest.EXISTS)) {
-                const [success, contents] = GLib.file_get_contents(historyPath);
+        // Fallback: check if we have stored data for today (survives reboots)
+        if (this._stats.daily[dateStr]) {
+            return this._stats.daily[dateStr];
+        }
+
+        return 0;
+    }
+
+    _updateLiveScreenTime() {
+        // Async method to update live screen time in background
+        const now = new Date();
+        const homeDir = GLib.get_home_dir();
+        const historyPath = `${homeDir}/.local/share/gnome-shell/session-active-history.json`;
+        const file = Gio.File.new_for_path(historyPath);
+
+        file.load_contents_async(null, (sourceObject, res) => {
+            try {
+                const [success, contents] = file.load_contents_finish(res);
 
                 if (success) {
                     const historyData = JSON.parse(new TextDecoder().decode(contents));
@@ -710,24 +730,13 @@ class WellbeingIndicator extends PanelMenu.Button {
                         totalActiveSeconds += (currentTime - lastActiveStart);
                     }
 
-                    liveSeconds = totalActiveSeconds;
+                    // Update cached value
+                    this._cachedLiveSeconds = totalActiveSeconds;
                 }
+            } catch (e) {
+                log(`Wellbeing Widget: Error calculating live screen time: ${e.message}`);
             }
-        } catch (e) {
-            log(`Wellbeing Widget: Error calculating live screen time: ${e.message}`);
-        }
-
-        // If we have live tracking data, use it. Otherwise fall back to stored data
-        if (liveSeconds > 0) {
-            return liveSeconds;
-        }
-
-        // Fallback: check if we have stored data for today (survives reboots)
-        if (this._stats.daily[dateStr]) {
-            return this._stats.daily[dateStr];
-        }
-
-        return 0;
+        });
     }
 
     _getDailyScreenTime() {
@@ -777,21 +786,28 @@ class WellbeingIndicator extends PanelMenu.Button {
             // Continue to next fallback
         }
 
-        // System uptime fallback
-        try {
-            const [success, contents] = GLib.file_get_contents('/proc/uptime');
-            if (success) {
-                const uptimeStr = new TextDecoder().decode(contents);
-                const uptimeSeconds = parseFloat(uptimeStr.split(' ')[0]);
-                const hours = Math.floor(uptimeSeconds / 3600);
-                const minutes = Math.floor((uptimeSeconds % 3600) / 60);
-                return `${hours}h ${minutes}m`;
+        // System uptime fallback (async)
+        const uptimeFile = Gio.File.new_for_path('/proc/uptime');
+        uptimeFile.load_contents_async(null, (_sourceObject, res) => {
+            try {
+                const [success, contents] = uptimeFile.load_contents_finish(res);
+                if (success) {
+                    const uptimeStr = new TextDecoder().decode(contents);
+                    const uptimeSeconds = parseFloat(uptimeStr.split(' ')[0]);
+                    const hours = Math.floor(uptimeSeconds / 3600);
+                    const minutes = Math.floor((uptimeSeconds % 3600) / 60);
+                    // Update label asynchronously
+                    if (this._label && this._getDailyScreenTimeSeconds() === 0) {
+                        this._cachedScreenTime = `${hours}h ${minutes}m`;
+                        this._label.text = this._cachedScreenTime;
+                    }
+                }
+            } catch (e) {
+                // Silent fail
             }
-        } catch (e) {
-            // Final fallback below
-        }
+        });
 
-        // Absolute fallback - show minimal time
+        // Absolute fallback - show minimal time immediately
         return '0h 0m';
     }
 
