@@ -856,14 +856,10 @@ class WellbeingIndicator extends PanelMenu.Button {
         // Play sound alert
         if (this._settings.get_boolean('sound-alerts')) {
             try {
-                GLib.spawn_command_line_async('canberra-gtk-play -i complete');
+                const soundPlayer = global.display.get_sound_player();
+                soundPlayer.play_from_theme('complete', 'Focus Session Complete', null);
             } catch (e) {
-                // Fallback to bell sound
-                try {
-                    GLib.spawn_command_line_async('paplay /usr/share/sounds/freedesktop/stereo/complete.oga');
-                } catch (e2) {
-                    // Silent fail
-                }
+                log(`Wellbeing Widget: Error playing sound: ${e.message}`);
             }
         }
 
