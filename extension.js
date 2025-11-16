@@ -766,22 +766,32 @@ class WellbeingIndicator extends PanelMenu.Button {
     }
 
     _getFallbackScreenTime() {
-        // Fallback: Calculate session time from boot
+        // Fallback: Calculate session time from boot (async)
         try {
-            const [success, stdout] = GLib.spawn_command_line_sync(
-                'bash -c "date -d \\"$(who -b | awk \'{print $3, $4}\')\\\" +%s 2>/dev/null"'
+            const proc = Gio.Subprocess.new(
+                ['bash', '-c', 'date -d "$(who -b | awk \'{print $3, $4}\')" +%s 2>/dev/null'],
+                Gio.SubprocessFlags.STDOUT_PIPE
             );
 
-            if (success) {
-                const bootEpoch = parseInt(new TextDecoder().decode(stdout).trim());
-                if (!isNaN(bootEpoch)) {
-                    const now = Math.floor(Date.now() / 1000);
-                    const sessionSeconds = now - bootEpoch;
-                    const hours = Math.floor(sessionSeconds / 3600);
-                    const minutes = Math.floor((sessionSeconds % 3600) / 60);
-                    return `${hours}h ${minutes}m`;
+            proc.communicate_utf8_async(null, null, (_proc, res) => {
+                try {
+                    const [, stdout] = proc.communicate_utf8_finish(res);
+                    const bootEpoch = parseInt(stdout.trim());
+                    if (!isNaN(bootEpoch)) {
+                        const now = Math.floor(Date.now() / 1000);
+                        const sessionSeconds = now - bootEpoch;
+                        const hours = Math.floor(sessionSeconds / 3600);
+                        const minutes = Math.floor((sessionSeconds % 3600) / 60);
+                        // Update label asynchronously
+                        if (this._label && this._getDailyScreenTimeSeconds() === 0) {
+                            this._cachedScreenTime = `${hours}h ${minutes}m`;
+                            this._label.text = this._cachedScreenTime;
+                        }
+                    }
+                } catch (e) {
+                    // Continue to next fallback
                 }
-            }
+            });
         } catch (e) {
             // Continue to next fallback
         }
