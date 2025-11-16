@@ -547,15 +547,15 @@ class WellbeingIndicator extends PanelMenu.Button {
         const hours = Math.floor(avgScreenTime / 3600);
         const minutes = Math.floor((avgScreenTime % 3600) / 60);
 
-        // Get yesterday data for detailed summary
-        const yesterday = data.length > 1 ? data[data.length - 2] : null;
+        // Get today's data for detailed summary (last entry in array)
+        const today = data.length > 0 ? data[data.length - 1] : null;
 
         let summaryText = `Avg: ${hours}h ${minutes}m/day • ${totalPomodoros} sessions this week`;
 
-        if (yesterday && yesterday.screenTime > 0) {
-            const yHours = Math.floor(yesterday.screenTime / 3600);
-            const yMinutes = Math.floor((yesterday.screenTime % 3600) / 60);
-            summaryText += `\nYesterday: ${yHours}h ${yMinutes}m • ${yesterday.pomodoros} sessions`;
+        if (today && today.screenTime > 0) {
+            const tHours = Math.floor(today.screenTime / 3600);
+            const tMinutes = Math.floor((today.screenTime % 3600) / 60);
+            summaryText += `\nToday: ${tHours}h ${tMinutes}m • ${today.pomodoros} sessions`;
         }
 
         this._statsSummaryLabel.text = summaryText;

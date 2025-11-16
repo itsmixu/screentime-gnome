@@ -1,6 +1,6 @@
 import Adw from 'gi://Adw';
 import Gtk from 'gi://Gtk';
-import {ExtensionPreferences} from 'resource:///org/gnome/Shell/Extensions/misc/extensionUtils.js';
+import {ExtensionPreferences} from 'resource:///org/gnome/Shell/Extensions/js/extensions/prefs.js';
 
 export default class WellbeingPreferences extends ExtensionPreferences {
     fillPreferencesWindow(window) {
