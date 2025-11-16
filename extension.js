@@ -326,6 +326,7 @@ class WellbeingIndicator extends PanelMenu.Button {
         // Music state
         this._musicPlaying = false;
         this._musicProcess = null;
+        this._musicCancellable = null;
         this._musicAnimationTimer = null;
         this._musicAnimationState = 0;
 
@@ -920,8 +921,14 @@ class WellbeingIndicator extends PanelMenu.Button {
 
             const stream = streams[0]; // Use first stream for now
 
-            // Use mpv with higher volume (80%)
-            this._musicProcess = GLib.spawn_command_line_async(`mpv --no-video --volume=80 "${stream}"`);
+            // Create cancellable for proper process management
+            this._musicCancellable = new Gio.Cancellable();
+
+            // Use mpv with higher volume (80%) via Gio.Subprocess
+            this._musicProcess = Gio.Subprocess.new(
+                ['mpv', '--no-video', '--volume=80', stream],
+                Gio.SubprocessFlags.NONE
+            );
 
             this._musicPlaying = true;
             this._startMusicAnimation();
@@ -939,8 +946,17 @@ class WellbeingIndicator extends PanelMenu.Button {
         if (!this._musicPlaying) return;
 
         try {
-            // Kill mpv process
-            GLib.spawn_command_line_async('pkill -f "mpv.*stream"');
+            // Cancel and terminate the music process properly
+            if (this._musicCancellable) {
+                this._musicCancellable.cancel();
+                this._musicCancellable = null;
+            }
+
+            if (this._musicProcess) {
+                this._musicProcess.force_exit();
+                this._musicProcess = null;
+            }
+
             this._musicPlaying = false;
             this._stopMusicAnimation();
         } catch (e) {
