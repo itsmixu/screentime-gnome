@@ -52,6 +52,8 @@ class WellbeingIndicator extends PanelMenu.Button {
         this._cachedLiveSeconds = 0; // Async-updated live screen time
         this._lastScreenTimeUpdate = 0;
         this._screenTimeCacheDuration = 4000; // 4 seconds cache (slightly less than update interval)
+        this._isLoadingScreenTime = true; // Loading state for initial data fetch
+        this._screenTimeError = null; // Error state
 
         // Statistics tracking
         this._statsView = 'weekly'; // 'weekly' or 'monthly'
@@ -98,7 +100,7 @@ class WellbeingIndicator extends PanelMenu.Button {
 
     _buildUI() {
         // Panel label with icon
-        const panelBox = new St.BoxLayout({
+        this._panelBox = new St.BoxLayout({
             style_class: 'wellbeing-panel-box'
         });
 
@@ -115,9 +117,9 @@ class WellbeingIndicator extends PanelMenu.Button {
             accessible_name: 'Daily Screen Time'
         });
 
-        panelBox.add_child(this._icon);
-        panelBox.add_child(this._label);
-        this.add_child(panelBox);
+        this._panelBox.add_child(this._icon);
+        this._panelBox.add_child(this._label);
+        this.add_child(this._panelBox);
 
         // Menu styling
         this.menu.box.style_class = 'wellbeing-menu';
@@ -211,6 +213,19 @@ class WellbeingIndicator extends PanelMenu.Button {
             x_align: Clutter.ActorAlign.CENTER
         });
 
+        // Row 1.5: Progress bar
+        this._pomoProgressBar = new St.Widget({
+            style_class: 'wellbeing-pomo-progress-container',
+            x_expand: true
+        });
+
+        this._pomoProgressFill = new St.Widget({
+            style_class: 'wellbeing-pomo-progress-fill',
+            width: 0
+        });
+
+        this._pomoProgressBar.add_child(this._pomoProgressFill);
+
         // Row 2: Duration buttons
         const durationContainer = new St.BoxLayout({
             vertical: false,
@@ -276,6 +291,7 @@ class WellbeingIndicator extends PanelMenu.Button {
 
         // Add all rows to main box
         focusMainBox.add_child(focusTitle);
+        focusMainBox.add_child(this._pomoProgressBar);
         focusMainBox.add_child(durationContainer);
         focusMainBox.add_child(controlsBox);
         focusSection.add_child(focusMainBox);
@@ -287,7 +303,14 @@ class WellbeingIndicator extends PanelMenu.Button {
             style_class: 'wellbeing-music-section'
         });
 
-        const musicContainer = new St.BoxLayout({
+        const musicMainBox = new St.BoxLayout({
+            vertical: true,
+            x_expand: true,
+            style_class: 'wellbeing-music-main-box'
+        });
+
+        // Top row: Title + Controls
+        const musicTopRow = new St.BoxLayout({
             vertical: false,
             x_expand: true,
             style_class: 'wellbeing-music-container'
@@ -318,9 +341,18 @@ class WellbeingIndicator extends PanelMenu.Button {
         musicControlsBox.add_child(this._playMusicBtn);
         musicControlsBox.add_child(this._stopMusicBtn);
 
-        musicContainer.add_child(musicTitleLabel);
-        musicContainer.add_child(musicControlsBox);
-        musicSection.add_child(musicContainer);
+        musicTopRow.add_child(musicTitleLabel);
+        musicTopRow.add_child(musicControlsBox);
+
+        // Bottom row: Now playing status
+        this._musicStatusLabel = new St.Label({
+            text: 'Select a stream to play',
+            style_class: 'wellbeing-music-status-label'
+        });
+
+        musicMainBox.add_child(musicTopRow);
+        musicMainBox.add_child(this._musicStatusLabel);
+        musicSection.add_child(musicMainBox);
         this.menu.addMenuItem(musicSection);
 
         // Music state
@@ -329,6 +361,7 @@ class WellbeingIndicator extends PanelMenu.Button {
         this._musicCancellable = null;
         this._musicAnimationTimer = null;
         this._musicAnimationState = 0;
+        this._currentStreamName = null;
 
         // Break reminder toggle with icon
         this._breakToggle = new PopupMenu.PopupSwitchMenuItem('Break Reminders', this._breakReminders);
@@ -339,6 +372,44 @@ class WellbeingIndicator extends PanelMenu.Button {
         });
         this._breakToggle.insert_child_at_index(breakIcon, 1);
         this.menu.addMenuItem(this._breakToggle);
+
+        // Separator
+        this.menu.addMenuItem(new PopupMenu.PopupSeparatorMenuItem());
+
+        // Settings button
+        const settingsItem = new PopupMenu.PopupBaseMenuItem({
+            reactive: true,
+            style_class: 'wellbeing-settings-item'
+        });
+
+        const settingsBox = new St.BoxLayout({
+            vertical: false,
+            style_class: 'wellbeing-settings-box',
+            x_expand: true
+        });
+
+        const settingsIcon = new St.Icon({
+            icon_name: 'preferences-system-symbolic',
+            icon_size: 18,
+            style_class: 'wellbeing-settings-icon'
+        });
+
+        const settingsLabel = new St.Label({
+            text: 'Extension Settings',
+            style_class: 'wellbeing-settings-label',
+            x_expand: true
+        });
+
+        settingsBox.add_child(settingsIcon);
+        settingsBox.add_child(settingsLabel);
+        settingsItem.add_child(settingsBox);
+
+        settingsItem.connect('activate', () => {
+            this._extension.openPreferences();
+            this.menu.close();
+        });
+
+        this.menu.addMenuItem(settingsItem);
 
         // Connect signals
         this._startPomodoro.connect('clicked', () => this._startPomo());
@@ -429,11 +500,31 @@ class WellbeingIndicator extends PanelMenu.Button {
         this._statsGraphBox.destroy_all_children();
 
         if (data.length === 0) {
-            const noDataLabel = new St.Label({
-                text: 'No data available yet',
-                style_class: 'wellbeing-stats-no-data'
+            const emptyStateBox = new St.BoxLayout({
+                vertical: true,
+                style_class: 'wellbeing-stats-empty-state',
+                x_align: Clutter.ActorAlign.CENTER
             });
-            this._statsGraphBox.add_child(noDataLabel);
+
+            const emptyIcon = new St.Label({
+                text: '📊',
+                style_class: 'wellbeing-stats-empty-icon'
+            });
+
+            const emptyTitle = new St.Label({
+                text: 'No Data Yet',
+                style_class: 'wellbeing-stats-empty-title'
+            });
+
+            const emptyMessage = new St.Label({
+                text: 'Start using your computer to see your wellbeing stats!',
+                style_class: 'wellbeing-stats-empty-message'
+            });
+
+            emptyStateBox.add_child(emptyIcon);
+            emptyStateBox.add_child(emptyTitle);
+            emptyStateBox.add_child(emptyMessage);
+            this._statsGraphBox.add_child(emptyStateBox);
             return;
         }
 
@@ -482,10 +573,22 @@ class WellbeingIndicator extends PanelMenu.Button {
                 barAreaBox.add_child(pomodoroIndicator);
             }
 
-            // Screen time bar
+            // Screen time bar with color coding
             const screenTimeHeight = Math.max((day.screenTime / maxScreenTime) * 80, 2);
+            const hoursToday = day.screenTime / 3600;
+
+            // Color code based on screen time: green (< 4h), yellow (4-6h), orange (6-8h), red (> 8h)
+            let barColor = 'wellbeing-stats-bar-screen';
+            if (hoursToday > 8) {
+                barColor = 'wellbeing-stats-bar-screen-high';
+            } else if (hoursToday > 6) {
+                barColor = 'wellbeing-stats-bar-screen-medium-high';
+            } else if (hoursToday > 4) {
+                barColor = 'wellbeing-stats-bar-screen-medium';
+            }
+
             const screenTimeBar = new St.Widget({
-                style_class: 'wellbeing-stats-bar-screen',
+                style_class: barColor,
                 style: `height: ${screenTimeHeight}px; width: 100%;`,
                 y_align: Clutter.ActorAlign.END
             });
@@ -594,18 +697,39 @@ class WellbeingIndicator extends PanelMenu.Button {
             const screenTime = this._getDailyScreenTime();
             const pomoStatus = this._getPomoStatus();
 
+            // Add subtle live indicator (only if not loading/error)
+            const liveIndicator = (!this._isLoadingScreenTime && !this._screenTimeError) ? '●' : '';
+
+            // Update panel box color based on screen time
+            const screenTimeSeconds = this._getDailyScreenTimeSeconds();
+            const hoursToday = screenTimeSeconds / 3600;
+
+            // Remove old color classes
+            this._panelBox.remove_style_class_name('wellbeing-panel-box-medium');
+            this._panelBox.remove_style_class_name('wellbeing-panel-box-medium-high');
+            this._panelBox.remove_style_class_name('wellbeing-panel-box-high');
+
+            // Apply new color class based on usage
+            if (hoursToday > 8) {
+                this._panelBox.add_style_class_name('wellbeing-panel-box-high');
+            } else if (hoursToday > 6) {
+                this._panelBox.add_style_class_name('wellbeing-panel-box-medium-high');
+            } else if (hoursToday > 4) {
+                this._panelBox.add_style_class_name('wellbeing-panel-box-medium');
+            }
+
             // Dynamic panel display with smooth width transitions
             if (this._pomoRunning) {
                 // Active timer: expand to show screen time + tomato + countdown
-                this._label.text = `${screenTime}  🍅 ${pomoStatus.short}`;
+                this._label.text = `${liveIndicator} ${screenTime}  🍅 ${pomoStatus.short}`.trim();
                 this._label.set_style('min-width: 160px; transition: all 0.3s ease;');
             } else if (this._pomoRemaining < this._pomoDuration) {
                 // Paused: expand to show screen time + paused time
-                this._label.text = `${screenTime}  ⏸ ${pomoStatus.short}`;
+                this._label.text = `${liveIndicator} ${screenTime}  ⏸ ${pomoStatus.short}`.trim();
                 this._label.set_style('min-width: 160px; transition: all 0.3s ease;');
             } else {
                 // Reset/not started: compact - just screen time
-                this._label.text = screenTime;
+                this._label.text = `${liveIndicator} ${screenTime}`.trim();
                 this._label.set_style('min-width: 80px; transition: all 0.3s ease;');
             }
 
@@ -635,6 +759,15 @@ class WellbeingIndicator extends PanelMenu.Button {
                 this._updateStatsView();
             }
 
+            // Update Pomodoro progress bar
+            if (this._pomoProgressFill && this._pomoProgressBar) {
+                const progress = 1 - (this._pomoRemaining / this._pomoDuration);
+                const containerWidth = this._pomoProgressBar.width;
+                if (containerWidth > 0) {
+                    this._pomoProgressFill.set_width(Math.floor(containerWidth * progress));
+                }
+            }
+
             // Break reminder (every 30 minutes)
             if (this._breakReminders) {
                 const currentTime = Math.floor(Date.now() / 1000);
@@ -646,8 +779,9 @@ class WellbeingIndicator extends PanelMenu.Button {
         } catch (e) {
             // Graceful error handling - don't let exceptions break the timer
             log(`Wellbeing Widget: Error in _updateUI: ${e.message}`);
+            this._screenTimeError = `UI update error`;
             if (this._label) {
-                this._label.text = 'Error';
+                this._label.text = '⚠️ UI Error';
             }
         }
     }
@@ -677,7 +811,7 @@ class WellbeingIndicator extends PanelMenu.Button {
         const historyPath = `${homeDir}/.local/share/gnome-shell/session-active-history.json`;
         const file = Gio.File.new_for_path(historyPath);
 
-        file.load_contents_async(null, (sourceObject, res) => {
+        file.load_contents_async(null, (_file, res) => {
             try {
                 const [success, contents] = file.load_contents_finish(res);
 
@@ -731,16 +865,34 @@ class WellbeingIndicator extends PanelMenu.Button {
                         totalActiveSeconds += (currentTime - lastActiveStart);
                     }
 
-                    // Update cached value
+                    // Update cached value and clear errors
                     this._cachedLiveSeconds = totalActiveSeconds;
+                    this._isLoadingScreenTime = false;
+                    this._screenTimeError = null;
+                } else {
+                    // File read failed
+                    this._screenTimeError = 'Cannot read screen time data';
+                    this._isLoadingScreenTime = false;
                 }
             } catch (e) {
                 log(`Wellbeing Widget: Error calculating live screen time: ${e.message}`);
+                this._screenTimeError = `Calculation error: ${e.message}`;
+                this._isLoadingScreenTime = false;
             }
         });
     }
 
     _getDailyScreenTime() {
+        // Show loading state on first load
+        if (this._isLoadingScreenTime && !this._cachedScreenTime) {
+            return '⏳ Loading...';
+        }
+
+        // Show error state if we have one
+        if (this._screenTimeError) {
+            return '⚠️ Error';
+        }
+
         // Use cached value if available and recent
         const now = Date.now();
         if (this._cachedScreenTime && (now - this._lastScreenTimeUpdate < this._screenTimeCacheDuration)) {
@@ -755,6 +907,8 @@ class WellbeingIndicator extends PanelMenu.Button {
             const hours = Math.floor(totalActiveSeconds / 3600);
             const minutes = Math.floor((totalActiveSeconds % 3600) / 60);
             result = `${hours}h ${minutes}m`;
+            this._isLoadingScreenTime = false; // Clear loading state
+            this._screenTimeError = null; // Clear error state
         } else {
             result = this._getFallbackScreenTime();
         }
@@ -914,30 +1068,39 @@ class WellbeingIndicator extends PanelMenu.Button {
         try {
             // Free lofi/zen radio streams (no downloads needed)
             const streams = [
-                'https://streams.calmradio.com/api/39/128/stream',  // Calm Radio - Meditation
-                'http://stream.zenradio.com/radios/relaxing.mp3',   // Zen Radio
-                'https://chillhop.com/live',                        // Chillhop Live
+                {name: 'Calm Radio - Meditation', url: 'https://streams.calmradio.com/api/39/128/stream'},
+                {name: 'Zen Radio - Relaxing', url: 'http://stream.zenradio.com/radios/relaxing.mp3'},
+                {name: 'Chillhop Live', url: 'https://chillhop.com/live'}
             ];
 
-            const stream = streams[0]; // Use first stream for now
+            const selectedStream = streams[0]; // Use first stream for now
+            this._currentStreamName = selectedStream.name;
 
             // Create cancellable for proper process management
             this._musicCancellable = new Gio.Cancellable();
 
             // Use mpv with higher volume (80%) via Gio.Subprocess
             this._musicProcess = Gio.Subprocess.new(
-                ['mpv', '--no-video', '--volume=80', stream],
+                ['mpv', '--no-video', '--volume=80', selectedStream.url],
                 Gio.SubprocessFlags.NONE
             );
 
             this._musicPlaying = true;
             this._startMusicAnimation();
 
+            // Update status label
+            if (this._musicStatusLabel) {
+                this._musicStatusLabel.text = `♫ Now Playing: ${this._currentStreamName}`;
+            }
+
             if (this._settings.get_boolean('visual-alerts')) {
                 Main.notify('🎵 Zen Music', 'Relax and focus with calming sounds');
             }
         } catch (e) {
             log(`Wellbeing Widget: Could not play music: ${e.message}`);
+            if (this._musicStatusLabel) {
+                this._musicStatusLabel.text = '⚠️ Error: Please install mpv';
+            }
             Main.notify('🎵 Zen Music', 'Please install mpv: sudo dnf install mpv');
         }
     }
@@ -958,9 +1121,18 @@ class WellbeingIndicator extends PanelMenu.Button {
             }
 
             this._musicPlaying = false;
+            this._currentStreamName = null;
             this._stopMusicAnimation();
+
+            // Update status label
+            if (this._musicStatusLabel) {
+                this._musicStatusLabel.text = 'Music stopped';
+            }
         } catch (e) {
             log(`Wellbeing Widget: Error stopping music: ${e.message}`);
+            if (this._musicStatusLabel) {
+                this._musicStatusLabel.text = '⚠️ Error stopping music';
+            }
         }
     }
 
