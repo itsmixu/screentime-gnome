@@ -59,6 +59,7 @@ class WellbeingIndicator extends PanelMenu.Button {
         this._statsView = 'weekly'; // 'weekly' or 'monthly'
         this._lastStatsSave = 0;
         this._statsSaveInterval = 60000; // Save stats every 60 seconds
+        this._lastRecordedDate = new Date().toISOString().split('T')[0]; // Track day changes
         this._loadStats();
 
         this._buildUI();
@@ -111,7 +112,7 @@ class WellbeingIndicator extends PanelMenu.Button {
         });
 
         this._label = new St.Label({
-            text: 'Loading…',
+            text: 'Summoning…',
             y_align: Clutter.ActorAlign.CENTER,
             style_class: 'wellbeing-panel-label',
             accessible_name: 'Daily Screen Time'
@@ -189,7 +190,7 @@ class WellbeingIndicator extends PanelMenu.Button {
             style_class: 'wellbeing-stats-summary-item'
         });
         this._statsSummaryLabel = new St.Label({
-            text: 'Loading statistics...',
+            text: 'Enchanting your insights…',
             style_class: 'wellbeing-stats-summary-label'
         });
         this._statsSummaryItem.add_child(this._statsSummaryLabel);
@@ -528,6 +529,40 @@ class WellbeingIndicator extends PanelMenu.Button {
             return;
         }
 
+        // Create container that holds both tooltip and chart
+        const graphWrapper = new St.Widget({
+            layout_manager: new Clutter.BinLayout(),
+            x_expand: true
+        });
+
+        // Create ONE shared tooltip for all bars (overlaid at top center)
+        const sharedTooltip = new St.BoxLayout({
+            vertical: true,
+            style_class: 'wellbeing-stats-tooltip',
+            visible: false,
+            x_align: Clutter.ActorAlign.CENTER,
+            y_align: Clutter.ActorAlign.START
+        });
+
+        const tooltipDate = new St.Label({
+            text: '',
+            style_class: 'wellbeing-stats-tooltip-date'
+        });
+
+        const tooltipTime = new St.Label({
+            text: '',
+            style_class: 'wellbeing-stats-tooltip-time'
+        });
+
+        const tooltipSessions = new St.Label({
+            text: '',
+            style_class: 'wellbeing-stats-tooltip-sessions'
+        });
+
+        sharedTooltip.add_child(tooltipDate);
+        sharedTooltip.add_child(tooltipTime);
+        sharedTooltip.add_child(tooltipSessions);
+
         // Find max values for scaling
         const maxScreenTime = Math.max(...data.map(d => d.screenTime), 1);
         const maxPomodoros = Math.max(...data.map(d => d.pomodoros), 1);
@@ -549,11 +584,9 @@ class WellbeingIndicator extends PanelMenu.Button {
                 track_hover: true
             });
 
-            // Create tooltip with detailed info
+            // Calculate display values for hover
             const hours = Math.floor(day.screenTime / 3600);
             const minutes = Math.floor((day.screenTime % 3600) / 60);
-            const dateStr = day.date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-            const tooltip = `${dateStr}\n${hours}h ${minutes}m screen time\n${day.pomodoros} focus session${day.pomodoros !== 1 ? 's' : ''}`;
 
             // Bar area container (fixed height)
             const barAreaBox = new St.BoxLayout({
@@ -603,34 +636,52 @@ class WellbeingIndicator extends PanelMenu.Button {
             });
             barContainer.add_child(dayLabel);
 
-            // Add hover effect and tooltip
-            let tooltipLabel = null;
+            // Prepare tooltip data for this bar
+            const dateStr = day.date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+            const timeStr = `${hours}h ${minutes}m`;
+            const sessionsStr = `${day.pomodoros} session${day.pomodoros !== 1 ? 's' : ''}`;
+
+            // Add hover effect - update shared tooltip content
             barContainer.connect('enter-event', () => {
                 barContainer.add_style_class_name('wellbeing-stats-bar-hover');
 
-                // Create and show tooltip
-                tooltipLabel = new St.Label({
-                    text: tooltip,
-                    style_class: 'wellbeing-stats-tooltip',
-                    style: 'text-align: center;'
+                // Update tooltip content
+                tooltipDate.text = dateStr;
+                tooltipTime.text = timeStr;
+                tooltipSessions.text = sessionsStr;
+
+                // Show with animation (centered at top via alignment)
+                sharedTooltip.visible = true;
+                sharedTooltip.opacity = 0;
+                sharedTooltip.ease({
+                    opacity: 255,
+                    duration: 200,
+                    mode: Clutter.AnimationMode.EASE_OUT_QUAD
                 });
-                barContainer.insert_child_at_index(tooltipLabel, 0);
             });
 
             barContainer.connect('leave-event', () => {
                 barContainer.remove_style_class_name('wellbeing-stats-bar-hover');
 
-                // Remove tooltip
-                if (tooltipLabel) {
-                    tooltipLabel.destroy();
-                    tooltipLabel = null;
-                }
+                // Hide tooltip
+                sharedTooltip.ease({
+                    opacity: 0,
+                    duration: 150,
+                    mode: Clutter.AnimationMode.EASE_IN_QUAD,
+                    onComplete: () => {
+                        sharedTooltip.visible = false;
+                    }
+                });
             });
 
             chartBox.add_child(barContainer);
         });
 
-        this._statsGraphBox.add_child(chartBox);
+        // Add chart and tooltip to wrapper using BinLayout (tooltip overlays on top)
+        graphWrapper.add_child(chartBox);
+        graphWrapper.add_child(sharedTooltip);
+
+        this._statsGraphBox.add_child(graphWrapper);
 
         // Legend
         const legendBox = new St.BoxLayout({
@@ -719,19 +770,23 @@ class WellbeingIndicator extends PanelMenu.Button {
             }
 
             // Dynamic panel display with smooth width transitions
-            if (this._pomoRunning) {
-                // Active timer: expand to show screen time + tomato + countdown
-                this._label.text = `${liveIndicator} ${screenTime}  🍅 ${pomoStatus.short}`.trim();
-                this._label.set_style('min-width: 160px; transition: all 0.3s ease;');
-            } else if (this._pomoRemaining < this._pomoDuration) {
-                // Paused: expand to show screen time + paused time
-                this._label.text = `${liveIndicator} ${screenTime}  ⏸ ${pomoStatus.short}`.trim();
-                this._label.set_style('min-width: 160px; transition: all 0.3s ease;');
-            } else {
-                // Reset/not started: compact - just screen time
-                this._label.text = `${liveIndicator} ${screenTime}`.trim();
-                this._label.set_style('min-width: 80px; transition: all 0.3s ease;');
+            // Skip label update if music animation is running (to prevent blinking)
+            if (!this._musicPlaying || this._pomoRunning || this._pomoRemaining < this._pomoDuration) {
+                if (this._pomoRunning) {
+                    // Active timer: expand to show screen time + tomato + countdown
+                    this._label.text = `${liveIndicator} ${screenTime}  🍅 ${pomoStatus.short}`.trim();
+                    this._label.set_style('min-width: 160px; transition: all 0.3s ease;');
+                } else if (this._pomoRemaining < this._pomoDuration) {
+                    // Paused: expand to show screen time + paused time
+                    this._label.text = `${liveIndicator} ${screenTime}  ⏸ ${pomoStatus.short}`.trim();
+                    this._label.set_style('min-width: 160px; transition: all 0.3s ease;');
+                } else {
+                    // Reset/not started: compact - just screen time
+                    this._label.text = `${liveIndicator} ${screenTime}`.trim();
+                    this._label.set_style('min-width: 100px; transition: all 0.3s ease;');
+                }
             }
+            // If music is playing, the animation timer handles the label updates
 
             // Update motivational quote (only change every 1 hour)
             const now = Date.now();
@@ -804,12 +859,78 @@ class WellbeingIndicator extends PanelMenu.Button {
         return 0;
     }
 
+    _calculateDayScreenTime(historyData, targetDate, currentTime = null) {
+        // Helper to calculate screen time for a specific day
+        const midnightStart = new Date(targetDate.getFullYear(), targetDate.getMonth(), targetDate.getDate(), 0, 0, 0);
+        const midnightEnd = new Date(targetDate.getFullYear(), targetDate.getMonth(), targetDate.getDate() + 1, 0, 0, 0);
+
+        const dayStart = Math.floor(midnightStart.getTime() / 1000);
+        const dayEnd = Math.floor(midnightEnd.getTime() / 1000);
+        const isToday = currentTime !== null;
+
+        let totalActiveSeconds = 0;
+        let lastActiveStart = null;
+        let lastStateBeforeDay = null;
+
+        // Find the last state before this day
+        for (const entry of historyData) {
+            if (entry.wallTimeSecs < dayStart) {
+                lastStateBeforeDay = entry.newState;
+            } else {
+                break;
+            }
+        }
+
+        // If we were active at midnight, start counting from midnight
+        if (lastStateBeforeDay === 1) {
+            lastActiveStart = dayStart;
+        }
+
+        // Process this day's entries
+        for (const entry of historyData) {
+            if (entry.wallTimeSecs < dayStart) {
+                continue;
+            }
+            if (entry.wallTimeSecs >= dayEnd) {
+                break;
+            }
+
+            if (entry.newState === 1) {
+                if (lastActiveStart === null) {
+                    lastActiveStart = entry.wallTimeSecs;
+                }
+            } else if (entry.newState === 0) {
+                if (lastActiveStart !== null) {
+                    totalActiveSeconds += (entry.wallTimeSecs - lastActiveStart);
+                    lastActiveStart = null;
+                }
+            }
+        }
+
+        // If still active at end of day (or now for today), close the session
+        if (lastActiveStart !== null) {
+            const endTime = isToday ? currentTime : dayEnd;
+            totalActiveSeconds += (endTime - lastActiveStart);
+        }
+
+        return totalActiveSeconds;
+    }
+
     _updateLiveScreenTime() {
-        // Async method to update live screen time in background
+        // Efficiently update only TODAY's screen time (runs every 5 seconds)
         const now = new Date();
+        const todayStr = now.toISOString().split('T')[0];
         const homeDir = GLib.get_home_dir();
         const historyPath = `${homeDir}/.local/share/gnome-shell/session-active-history.json`;
         const file = Gio.File.new_for_path(historyPath);
+
+        // Detect midnight crossing - finalize yesterday's data
+        if (todayStr !== this._lastRecordedDate) {
+            log(`Wellbeing Widget: Day changed from ${this._lastRecordedDate} to ${todayStr} - finalizing previous day`);
+            // Yesterday's data is already calculated and stored, just mark the transition
+            this._lastRecordedDate = todayStr;
+            this._cachedLiveSeconds = 0; // Reset today's cache
+        }
 
         file.load_contents_async(null, (_file, res) => {
             try {
@@ -817,60 +938,33 @@ class WellbeingIndicator extends PanelMenu.Button {
 
                 if (success) {
                     const historyData = JSON.parse(new TextDecoder().decode(contents));
-
-                    const midnightToday = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0);
-                    const todayStart = Math.floor(midnightToday.getTime() / 1000);
                     const currentTime = Math.floor(Date.now() / 1000);
 
-                    let totalActiveSeconds = 0;
-                    let lastActiveStart = null;
-                    let lastStateBeforeToday = null;
+                    // Calculate TODAY's screen time (updates live)
+                    const todayScreenTime = this._calculateDayScreenTime(historyData, now, currentTime);
+                    this._stats.daily[todayStr] = todayScreenTime;
+                    this._cachedLiveSeconds = todayScreenTime;
 
-                    // First pass: find the last state before today
-                    for (const entry of historyData) {
-                        if (entry.wallTimeSecs < todayStart) {
-                            lastStateBeforeToday = entry.newState;
-                        } else {
-                            break;
+                    // Calculate historical days ONLY if they don't exist yet (one-time calculation)
+                    // This includes yesterday if we just crossed midnight
+                    for (let daysAgo = 1; daysAgo <= 7; daysAgo++) {
+                        const pastDate = new Date(now);
+                        pastDate.setDate(pastDate.getDate() - daysAgo);
+                        const pastDateStr = pastDate.toISOString().split('T')[0];
+
+                        // Always recalculate yesterday when day changes to get final value
+                        // Skip others if already calculated
+                        if (!this._stats.daily[pastDateStr] || daysAgo === 1) {
+                            const pastScreenTime = this._calculateDayScreenTime(historyData, pastDate, null);
+                            this._stats.daily[pastDateStr] = pastScreenTime;
                         }
                     }
 
-                    // If we were active at midnight, start counting from midnight
-                    if (lastStateBeforeToday === 1) {
-                        lastActiveStart = todayStart;
-                    }
-
-                    // Second pass: process today's entries
-                    for (const entry of historyData) {
-                        if (entry.wallTimeSecs < todayStart) {
-                            continue;
-                        }
-
-                        if (entry.newState === 1) {
-                            // Becoming active
-                            if (lastActiveStart === null) {
-                                lastActiveStart = entry.wallTimeSecs;
-                            }
-                        } else if (entry.newState === 0) {
-                            // Becoming inactive
-                            if (lastActiveStart !== null) {
-                                totalActiveSeconds += (entry.wallTimeSecs - lastActiveStart);
-                                lastActiveStart = null;
-                            }
-                        }
-                    }
-
-                    // If currently active, add time until now
-                    if (lastActiveStart !== null) {
-                        totalActiveSeconds += (currentTime - lastActiveStart);
-                    }
-
-                    // Update cached value and clear errors
-                    this._cachedLiveSeconds = totalActiveSeconds;
+                    // Save stats (only when changed)
+                    this._saveStats();
                     this._isLoadingScreenTime = false;
                     this._screenTimeError = null;
                 } else {
-                    // File read failed
                     this._screenTimeError = 'Cannot read screen time data';
                     this._isLoadingScreenTime = false;
                 }
@@ -885,7 +979,7 @@ class WellbeingIndicator extends PanelMenu.Button {
     _getDailyScreenTime() {
         // Show loading state on first load
         if (this._isLoadingScreenTime && !this._cachedScreenTime) {
-            return '⏳ Loading...';
+            return '🔮 Summoning...';
         }
 
         // Show error state if we have one

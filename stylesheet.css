@@ -786,15 +786,16 @@
   spacing: 4px;
   padding: 8px 4px;
   min-height: 100px;
+  transition: none; /* Prevent any inherited transitions on layout */
 }
 
 .wellbeing-stats-bar-container {
   spacing: 2px;
-  min-width: 20px;
-  max-width: 20px;
-  padding: 2px;
+  min-width: 24px;
+  max-width: 24px;
+  padding: 3px;
   border-radius: 6px;
-  transition: background 0.2s ease;
+  transition: background 0.2s ease; /* Only transition background, not layout properties */
   min-height: 110px;
   max-height: 110px;
 }
@@ -812,20 +813,39 @@
   spacing: 2px;
 }
 
-/* Tooltip for graph bars */
+/* Tooltip for graph bars - floating with blur */
 .wellbeing-stats-tooltip {
+  background: rgba(30, 40, 35, 0.98);
+  backdrop-filter: blur(10px);
+  padding: 10px 14px;
+  border-radius: 10px;
+  border: 2px solid rgba(143, 164, 138, 0.6);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.9), 0 0 0 1px rgba(255, 255, 255, 0.1);
+  margin-bottom: 10px;
+  spacing: 4px;
+  min-width: 90px;
+}
+
+.wellbeing-stats-tooltip-date {
+  font-size: 11px;
+  font-weight: 700;
+  color: rgba(143, 164, 138, 1);
+  text-align: center;
+}
+
+.wellbeing-stats-tooltip-time {
+  font-size: 16px;
+  font-weight: 900;
+  color: #ffffff;
+  text-align: center;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.8);
+}
+
+.wellbeing-stats-tooltip-sessions {
   font-size: 10px;
   font-weight: 600;
-  color: rgba(255, 255, 255, 1);
-  background: linear-gradient(135deg, rgba(143, 164, 138, 0.98) 0%, rgba(96, 125, 98, 0.98) 100%);
-  padding: 6px 10px;
-  border-radius: 8px;
-  border: 1px solid rgba(255, 255, 255, 0.3);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.6);
-  margin-bottom: 6px;
-  line-height: 1.4;
-  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
-  min-width: 80px;
+  color: rgba(255, 152, 0, 0.95);
+  text-align: center;
 }
 
 .wellbeing-stats-bar-screen {
