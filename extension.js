@@ -60,6 +60,7 @@ class WellbeingIndicator extends PanelMenu.Button {
         this._lastStatsSave = 0;
         this._statsSaveInterval = 60000; // Save stats every 60 seconds
         this._lastRecordedDate = new Date().toISOString().split('T')[0]; // Track day changes
+        this._finalizedDays = new Set(); // Track which days are finalized (never recalculate)
         this._loadStats();
 
         this._buildUI();
@@ -369,7 +370,7 @@ class WellbeingIndicator extends PanelMenu.Button {
         const breakIcon = new St.Icon({
             icon_name: 'preferences-system-notifications-symbolic',
             icon_size: 16,
-            style_class: 'popup-menu-icon'
+            style_class: 'wellbeing-switch-icon'
         });
         this._breakToggle.insert_child_at_index(breakIcon, 1);
         this.menu.addMenuItem(this._breakToggle);
@@ -783,7 +784,7 @@ class WellbeingIndicator extends PanelMenu.Button {
                 } else {
                     // Reset/not started: compact - just screen time
                     this._label.text = `${liveIndicator} ${screenTime}`.trim();
-                    this._label.set_style('min-width: 100px; transition: all 0.3s ease;');
+                    this._label.set_style('min-width: 110px; transition: all 0.3s ease;');
                 }
             }
             // If music is playing, the animation timer handles the label updates
@@ -924,10 +925,17 @@ class WellbeingIndicator extends PanelMenu.Button {
         const historyPath = `${homeDir}/.local/share/gnome-shell/session-active-history.json`;
         const file = Gio.File.new_for_path(historyPath);
 
-        // Detect midnight crossing - finalize yesterday's data
+        // Detect midnight crossing - finalize yesterday's data ONCE
         if (todayStr !== this._lastRecordedDate) {
             log(`Wellbeing Widget: Day changed from ${this._lastRecordedDate} to ${todayStr} - finalizing previous day`);
-            // Yesterday's data is already calculated and stored, just mark the transition
+
+            // Mark yesterday as finalized (never recalculate it again)
+            if (this._lastRecordedDate) {
+                this._finalizedDays.add(this._lastRecordedDate);
+                log(`Wellbeing Widget: Finalized data for ${this._lastRecordedDate}: ${this._stats.daily[this._lastRecordedDate]} seconds`);
+            }
+
+            // Update to new day
             this._lastRecordedDate = todayStr;
             this._cachedLiveSeconds = 0; // Reset today's cache
         }
@@ -945,18 +953,22 @@ class WellbeingIndicator extends PanelMenu.Button {
                     this._stats.daily[todayStr] = todayScreenTime;
                     this._cachedLiveSeconds = todayScreenTime;
 
-                    // Calculate historical days ONLY if they don't exist yet (one-time calculation)
-                    // This includes yesterday if we just crossed midnight
+                    // Calculate historical days ONLY if they don't exist yet AND are not finalized
                     for (let daysAgo = 1; daysAgo <= 7; daysAgo++) {
                         const pastDate = new Date(now);
                         pastDate.setDate(pastDate.getDate() - daysAgo);
                         const pastDateStr = pastDate.toISOString().split('T')[0];
 
-                        // Always recalculate yesterday when day changes to get final value
-                        // Skip others if already calculated
-                        if (!this._stats.daily[pastDateStr] || daysAgo === 1) {
+                        // NEVER recalculate finalized days (days that have passed midnight)
+                        if (this._finalizedDays.has(pastDateStr)) {
+                            continue; // Skip finalized days
+                        }
+
+                        // Only calculate if we don't have data for this day yet
+                        if (!this._stats.daily[pastDateStr]) {
                             const pastScreenTime = this._calculateDayScreenTime(historyData, pastDate, null);
                             this._stats.daily[pastDateStr] = pastScreenTime;
+                            log(`Wellbeing Widget: Calculated historical data for ${pastDateStr}: ${pastScreenTime} seconds`);
                         }
                     }
 
@@ -965,13 +977,26 @@ class WellbeingIndicator extends PanelMenu.Button {
                     this._isLoadingScreenTime = false;
                     this._screenTimeError = null;
                 } else {
-                    this._screenTimeError = 'Cannot read screen time data';
+                    // File doesn't exist or can't be read - normal on first install
+                    if (this._isLoadingScreenTime) {
+                        log(`Wellbeing Widget: Session history file not found - waiting for GNOME to create it`);
+                        // Don't show error on first install, just show 0h 0m
+                        this._screenTimeError = null;
+                    }
                     this._isLoadingScreenTime = false;
+                    this._cachedLiveSeconds = 0;
                 }
             } catch (e) {
-                log(`Wellbeing Widget: Error calculating live screen time: ${e.message}`);
-                this._screenTimeError = `Calculation error: ${e.message}`;
+                // Gracefully handle errors
+                if (e.message && e.message.includes('JSON')) {
+                    log(`Wellbeing Widget: Session history file is empty or corrupted - waiting for valid data`);
+                    this._screenTimeError = null; // Don't show error for empty/corrupted file
+                } else {
+                    log(`Wellbeing Widget: Error calculating live screen time: ${e.message}`);
+                    this._screenTimeError = 'Data Error';
+                }
                 this._isLoadingScreenTime = false;
+                this._cachedLiveSeconds = 0;
             }
         });
     }
@@ -979,12 +1004,12 @@ class WellbeingIndicator extends PanelMenu.Button {
     _getDailyScreenTime() {
         // Show loading state on first load
         if (this._isLoadingScreenTime && !this._cachedScreenTime) {
-            return '🔮 Summoning...';
+            return '🔮 Summoning…';
         }
 
-        // Show error state if we have one
+        // Show error state if we have one (only for real errors, not missing file)
         if (this._screenTimeError) {
-            return '⚠️ Error';
+            return '⚠️ ' + this._screenTimeError;
         }
 
         // Use cached value if available and recent
@@ -1193,9 +1218,10 @@ class WellbeingIndicator extends PanelMenu.Button {
         } catch (e) {
             log(`Wellbeing Widget: Could not play music: ${e.message}`);
             if (this._musicStatusLabel) {
-                this._musicStatusLabel.text = '⚠️ Error: Please install mpv';
+                this._musicStatusLabel.text = '⚠️ mpv not installed';
             }
-            Main.notify('🎵 Zen Music', 'Please install mpv: sudo dnf install mpv');
+            // Show user-friendly notification with generic install instruction
+            Main.notify('🎵 Zen Music', 'Install mpv: Run "sudo <package-manager> install mpv" in terminal');
         }
     }
 
