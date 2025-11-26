@@ -8,6 +8,9 @@
   border-radius: 18px;
   box-shadow: 0 3px 12px rgba(0, 0, 0, 0.6), 0 0 0 1px rgba(255, 255, 255, 0.15);
   transition: transform 0.15s ease, box-shadow 0.15s ease;
+  /* GPU acceleration */
+  will-change: transform;
+  transform: translateZ(0);
 }
 
 .wellbeing-panel-box:hover {
@@ -91,16 +94,15 @@
     linear-gradient(180deg, #1c1e20 0%, #18191b 100%),
     radial-gradient(circle at top right, rgba(143, 164, 138, 0.08), transparent 50%);
   border-radius: 20px;
-  /* Optimized shadows - static for GPU acceleration */
+  /* Simplified shadows for better performance */
   box-shadow:
     0 20px 60px rgba(0, 0, 0, 0.9),
-    0 8px 24px rgba(0, 0, 0, 0.7),
-    0 0 0 1px rgba(255, 255, 255, 0.15),
-    inset 0 1px 0 rgba(255, 255, 255, 0.1);
+    0 0 0 1px rgba(255, 255, 255, 0.15);
   /* Brighter sage border with subtle glow */
   border: 2.5px solid rgba(143, 164, 138, 0.7);
-  animation: menuSlideIn 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
-  will-change: opacity, transform;
+  /* GPU acceleration hints */
+  will-change: opacity;
+  transform: translateZ(0);
 }
 
 @keyframes menuSlideIn {
@@ -124,11 +126,10 @@
     linear-gradient(180deg, rgba(143, 164, 138, 0.05) 0%, transparent 100%);
   border-radius: 16px;
   border: 1px solid rgba(143, 164, 138, 0.5);
-  /* Static shadows for performance */
-  box-shadow:
-    0 0 32px rgba(143, 164, 138, 0.35),
-    0 4px 20px rgba(143, 164, 138, 0.2),
-    inset 0 1px 2px rgba(255, 255, 255, 0.1);
+  /* Simplified shadows for performance */
+  box-shadow: 0 0 32px rgba(143, 164, 138, 0.35);
+  /* GPU acceleration */
+  transform: translateZ(0);
 }
 
 @keyframes headerPulse {
@@ -436,11 +437,10 @@
     linear-gradient(135deg, rgba(255, 140, 0, 0.14) 0%, rgba(255, 99, 71, 0.10) 100%),
     radial-gradient(circle at top, rgba(255, 140, 0, 0.08), transparent 60%);
   border: 1px solid rgba(255, 140, 0, 0.45);
-  /* Static shadows for performance */
-  box-shadow:
-    0 4px 20px rgba(255, 140, 0, 0.25),
-    0 2px 8px rgba(255, 140, 0, 0.2),
-    inset 0 1px 1px rgba(255, 255, 255, 0.07);
+  /* Simplified shadows for performance */
+  box-shadow: 0 4px 20px rgba(255, 140, 0, 0.25);
+  /* GPU acceleration */
+  transform: translateZ(0);
 }
 
 @keyframes focusPulse {
@@ -640,11 +640,10 @@
     linear-gradient(135deg, rgba(75, 0, 130, 0.18) 0%, rgba(128, 0, 128, 0.13) 100%),
     radial-gradient(circle at bottom right, rgba(186, 85, 211, 0.10), transparent 60%);
   border: 1px solid rgba(186, 85, 211, 0.42);
-  box-shadow:
-    0 3px 16px rgba(186, 85, 211, 0.18),
-    0 1px 6px rgba(186, 85, 211, 0.12),
-    inset 0 1px 1px rgba(255, 255, 255, 0.05),
-    inset 0 0 40px rgba(186, 85, 211, 0.06);
+  /* Simplified shadows for performance */
+  box-shadow: 0 3px 16px rgba(186, 85, 211, 0.18);
+  /* GPU acceleration */
+  transform: translateZ(0);
 }
 
 .wellbeing-music-container {
@@ -717,11 +716,10 @@
     linear-gradient(135deg, rgba(40, 44, 46, 0.85) 0%, rgba(34, 38, 40, 0.9) 100%),
     radial-gradient(circle at bottom left, rgba(143, 164, 138, 0.06), transparent 60%);
   border: 1px solid rgba(143, 164, 138, 0.35);
-  box-shadow:
-    0 4px 12px rgba(0, 0, 0, 0.4),
-    0 1px 4px rgba(0, 0, 0, 0.3),
-    inset 0 1px 1px rgba(255, 255, 255, 0.05),
-    inset 0 0 30px rgba(143, 164, 138, 0.03);
+  /* Simplified shadows for performance */
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+  /* GPU acceleration */
+  transform: translateZ(0);
 }
 
 .wellbeing-stats-graph-box {
@@ -767,10 +765,13 @@
   padding: 10px 14px;
   border-radius: 10px;
   border: 2px solid rgba(143, 164, 138, 0.6);
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.9), 0 0 0 1px rgba(255, 255, 255, 0.1);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.9);
   margin-bottom: 10px;
   spacing: 4px;
   min-width: 90px;
+  /* GPU acceleration for smooth animations */
+  will-change: opacity, transform;
+  transform: translateZ(0);
 }
 
 .wellbeing-stats-tooltip-date {

@@ -58,6 +58,7 @@ class WellbeingIndicator extends PanelMenu.Button {
         // Statistics tracking
         this._statsView = 'weekly'; // 'weekly' or 'monthly'
         this._lastStatsSave = 0;
+        this._lastStatsUpdate = 0; // Track when stats view was last updated (for performance)
         this._statsSaveInterval = 60000; // Save stats every 60 seconds
         this._lastRecordedDate = new Date().toISOString().split('T')[0]; // Track day changes
         this._finalizedDays = new Set(); // Track which days are finalized (never recalculate)
@@ -423,18 +424,28 @@ class WellbeingIndicator extends PanelMenu.Button {
             this._breakReminders = state;
         });
 
-        // Update stats when menu opens
+        // Update stats when menu opens - deferred for instant opening
         this.menu.connect('open-state-changed', (_menu, open) => {
             if (open) {
-                // Force cache invalidation and update when menu opens
-                this._cachedScreenTime = null;
-                this._lastScreenTimeUpdate = 0;
+                // Defer updates to next idle cycle for instant menu opening
+                GLib.idle_add(GLib.PRIORITY_LOW, () => {
+                    // Only update stats if they're stale (no cache invalidation for instant opening)
+                    const now = Date.now();
+                    const statsCacheTime = 10000; // Update stats only if menu was closed for 10+ seconds
 
-                const screenTimeSeconds = this._getDailyScreenTimeSeconds();
-                if (screenTimeSeconds > 0) {
-                    this._recordDailyStats(new Date(), screenTimeSeconds);
-                }
-                this._updateStatsView();
+                    if (now - this._lastStatsUpdate > statsCacheTime) {
+                        this._updateStatsView();
+                        this._lastStatsUpdate = now;
+                    }
+
+                    // Record current stats (lightweight operation)
+                    const screenTimeSeconds = this._getDailyScreenTimeSeconds();
+                    if (screenTimeSeconds > 0) {
+                        this._recordDailyStats(new Date(), screenTimeSeconds);
+                    }
+
+                    return GLib.SOURCE_REMOVE;
+                });
             }
         });
     }
@@ -925,15 +936,12 @@ class WellbeingIndicator extends PanelMenu.Button {
         const historyPath = `${homeDir}/.local/share/gnome-shell/session-active-history.json`;
         const file = Gio.File.new_for_path(historyPath);
 
-        // Detect midnight crossing - finalize yesterday's data ONCE
+        // Detect midnight crossing - yesterday becomes the old day but NOT finalized yet
         if (todayStr !== this._lastRecordedDate) {
-            log(`Wellbeing Widget: Day changed from ${this._lastRecordedDate} to ${todayStr} - finalizing previous day`);
+            log(`Wellbeing Widget: Day changed from ${this._lastRecordedDate} to ${todayStr}`);
 
-            // Mark yesterday as finalized (never recalculate it again)
-            if (this._lastRecordedDate) {
-                this._finalizedDays.add(this._lastRecordedDate);
-                log(`Wellbeing Widget: Finalized data for ${this._lastRecordedDate}: ${this._stats.daily[this._lastRecordedDate]} seconds`);
-            }
+            // DON'T finalize yesterday immediately - it will be finalized when it becomes 2 days old
+            // This allows yesterday to be recalculated if needed (e.g., session history updates)
 
             // Update to new day
             this._lastRecordedDate = todayStr;
@@ -953,22 +961,34 @@ class WellbeingIndicator extends PanelMenu.Button {
                     this._stats.daily[todayStr] = todayScreenTime;
                     this._cachedLiveSeconds = todayScreenTime;
 
-                    // Calculate historical days ONLY if they don't exist yet AND are not finalized
+                    // Calculate historical days with proper finalization logic
                     for (let daysAgo = 1; daysAgo <= 7; daysAgo++) {
                         const pastDate = new Date(now);
                         pastDate.setDate(pastDate.getDate() - daysAgo);
                         const pastDateStr = pastDate.toISOString().split('T')[0];
 
-                        // NEVER recalculate finalized days (days that have passed midnight)
+                        // NEVER recalculate finalized days (days that are 2+ days old)
                         if (this._finalizedDays.has(pastDateStr)) {
                             continue; // Skip finalized days
                         }
 
-                        // Only calculate if we don't have data for this day yet
-                        if (!this._stats.daily[pastDateStr]) {
+                        // For yesterday (daysAgo === 1), ALWAYS recalculate until it's finalized
+                        // For older days, only calculate if we don't have data yet
+                        if (daysAgo === 1 || !this._stats.daily[pastDateStr]) {
                             const pastScreenTime = this._calculateDayScreenTime(historyData, pastDate, null);
+                            const previousValue = this._stats.daily[pastDateStr];
                             this._stats.daily[pastDateStr] = pastScreenTime;
-                            log(`Wellbeing Widget: Calculated historical data for ${pastDateStr}: ${pastScreenTime} seconds`);
+
+                            // Log only if value changed significantly (to reduce log spam)
+                            if (previousValue === undefined || Math.abs(previousValue - pastScreenTime) > 60) {
+                                log(`Wellbeing Widget: Updated ${daysAgo === 1 ? 'yesterday' : 'historical'} data for ${pastDateStr}: ${pastScreenTime} seconds`);
+                            }
+
+                            // Finalize yesterday once the day after tomorrow starts (it becomes 2 days old)
+                            if (daysAgo === 2 && !this._finalizedDays.has(pastDateStr)) {
+                                this._finalizedDays.add(pastDateStr);
+                                log(`Wellbeing Widget: Finalized ${pastDateStr} with ${pastScreenTime} seconds (now 2 days old)`);
+                            }
                         }
                     }
 
