@@ -29,7 +29,7 @@ import * as PopupMenu from 'resource:///org/gnome/shell/ui/popupMenu.js';
 const WellbeingIndicator = GObject.registerClass(
 class WellbeingIndicator extends PanelMenu.Button {
     _init(extension) {
-        super._init(0.0, 'Wellbeing Widget', false);
+        super._init(0.5, 'Wellbeing Widget', false);
 
         this._extension = extension;
         this._settings = extension.getSettings();
@@ -102,15 +102,9 @@ class WellbeingIndicator extends PanelMenu.Button {
     }
 
     _buildUI() {
-        // Panel label with icon
+        // Panel label (no icon - cleaner look)
         this._panelBox = new St.BoxLayout({
             style_class: 'wellbeing-panel-box'
-        });
-
-        this._icon = new St.Icon({
-            icon_name: 'preferences-system-time-symbolic',
-            style_class: 'system-status-icon wellbeing-panel-icon',
-            accessible_name: 'Screen Time Tracker'
         });
 
         this._label = new St.Label({
@@ -120,7 +114,6 @@ class WellbeingIndicator extends PanelMenu.Button {
             accessible_name: 'Daily Screen Time'
         });
 
-        this._panelBox.add_child(this._icon);
         this._panelBox.add_child(this._label);
         this.add_child(this._panelBox);
 
@@ -159,6 +152,7 @@ class WellbeingIndicator extends PanelMenu.Button {
             text: this._getMotivationalQuote(),
             style_class: 'wellbeing-quote-label-compact'
         });
+        this._quoteLabel.clutter_text.line_wrap = true;
 
         headerQuoteBox.add_child(headerBox);
         headerQuoteBox.add_child(this._quoteLabel);
@@ -191,11 +185,13 @@ class WellbeingIndicator extends PanelMenu.Button {
             reactive: false,
             style_class: 'wellbeing-stats-summary-item'
         });
-        this._statsSummaryLabel = new St.Label({
+        this._statsSummaryBox = new St.BoxLayout({ vertical: true });
+        const initialLabel = new St.Label({
             text: 'Enchanting your insights…',
             style_class: 'wellbeing-stats-summary-label'
         });
-        this._statsSummaryItem.add_child(this._statsSummaryLabel);
+        this._statsSummaryBox.add_child(initialLabel);
+        this._statsSummaryItem.add_child(this._statsSummaryBox);
         this.menu.addMenuItem(this._statsSummaryItem);
 
         // Combined Focus Session section (Duration + Controls) - Vertical layout
@@ -322,7 +318,9 @@ class WellbeingIndicator extends PanelMenu.Button {
         // Music label (emoji is part of text, no separate icon needed)
         const musicTitleLabel = new St.Label({
             text: '🎵 Zen Music',
-            style_class: 'wellbeing-music-title-label'
+            style_class: 'wellbeing-music-title-label',
+            y_align: Clutter.ActorAlign.CENTER,
+            x_expand: true
         });
 
         // Music controls
@@ -350,7 +348,8 @@ class WellbeingIndicator extends PanelMenu.Button {
         // Bottom row: Now playing status
         this._musicStatusLabel = new St.Label({
             text: 'Select a stream to play',
-            style_class: 'wellbeing-music-status-label'
+            style_class: 'wellbeing-music-status-label',
+            x_align: Clutter.ActorAlign.START
         });
 
         musicMainBox.add_child(musicTopRow);
@@ -725,29 +724,47 @@ class WellbeingIndicator extends PanelMenu.Button {
         // Get today's data for detailed summary (last entry in array)
         const today = data.length > 0 ? data[data.length - 1] : null;
 
-        let summaryText = `Avg: ${hours}h ${minutes}m/day • ${totalPomodoros} sessions this week`;
+        this._statsSummaryBox.destroy_all_children();
+
+        const avgLabel = new St.Label({
+            text: `Avg: ${hours}h ${minutes}m/day • ${totalPomodoros} sessions this week`,
+            style_class: 'wellbeing-stats-summary-label'
+        });
+        this._statsSummaryBox.add_child(avgLabel);
 
         if (today && today.screenTime > 0) {
             const tHours = Math.floor(today.screenTime / 3600);
             const tMinutes = Math.floor((today.screenTime % 3600) / 60);
-            summaryText += `\nToday: ${tHours}h ${tMinutes}m • ${today.pomodoros} sessions`;
+            const todayLabel = new St.Label({
+                text: `Today: ${tHours}h ${tMinutes}m      • ${today.pomodoros} sessions`,
+                style_class: 'wellbeing-stats-summary-label'
+            });
+            this._statsSummaryBox.add_child(todayLabel);
         }
-
-        this._statsSummaryLabel.text = summaryText;
     }
 
     _getMotivationalQuote() {
         const quotes = [
             '💡 "Focus is the gateway to excellence"',
             '🌟 "Deep work produces deep results"',
-            '🎯 "Distraction is the enemy of mastery"',
+            '🎯 "Progress over perfection, always"',
             '✨ "Small focused steps lead to big achievements"',
             '🌊 "Flow state is where magic happens"',
             '🚀 "Your future self will thank you for focusing now"',
             '🎨 "Creativity thrives in focused silence"',
             '⚡ "Energy follows attention"',
             '🧘 "Mindfulness begins with awareness"',
-            '🌱 "Growth happens one focused session at a time"'
+            '🌱 "Growth happens one focused session at a time"',
+            '🔥 "Discipline is choosing between what you want now and what you want most"',
+            '🌸 "Balance is not something you find, it\'s something you create"',
+            '⭐ "Quality over quantity in everything you do"',
+            '🌈 "Every moment is a fresh beginning"',
+            '🎪 "Consistency beats intensity every time"',
+            '🌺 "Rest is not a reward for work completed, but a requirement for work to continue"',
+            '🦋 "Transform pressure into focus, stress into strength"',
+            '🌙 "Peace comes from within, not from external achievements"',
+            '🔮 "Your attention is your most valuable currency"',
+            '🌿 "Breathe deeply, work mindfully, live intentionally"'
         ];
         return quotes[Math.floor(Math.random() * quotes.length)];
     }
@@ -1024,8 +1041,20 @@ class WellbeingIndicator extends PanelMenu.Button {
     _getDailyScreenTime() {
         // Show loading state on first load
         if (this._isLoadingScreenTime && !this._cachedScreenTime) {
-            return '🔮 Summoning…';
+            const loadingMessages = [
+                '🔮 Summoning…',
+                '🪄 Enchanting…',
+                '🌊 Harmonizing…',
+                '🛸 Calibrating…',
+                '🎭 Orchestrating…',
+                '🌀 Weaving…',
+                '🧘 Centering…',
+                '🌙 Manifesting…',
+                '🌱 Initializing…'
+            ];
+            return loadingMessages[Math.floor(Math.random() * loadingMessages.length)];
         }
+
 
         // Show error state if we have one (only for real errors, not missing file)
         if (this._screenTimeError) {

@@ -425,6 +425,7 @@
   line-height: 1.5;
   text-align: center;
   margin-top: 2px;
+  max-width: 320px;
 }
 
 /* Merged Focus Session Section - Static for performance */
@@ -958,5 +959,4 @@
   font-size: 12px;
   font-weight: 600;
   color: rgba(255, 255, 255, 0.95);
-  text-align: center;
 }

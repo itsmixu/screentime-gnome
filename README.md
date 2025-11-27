@@ -1,6 +1,6 @@
 # Wellbeing Widget
 
-A mindful productivity companion for GNOME Shell featuring intelligent screen time tracking, focus sessions, zen music streaming, and a calming sage green aesthetic designed for sustained concentration.
+A mindful productivity companion for GNOME Shell featuring intelligent screen time tracking, focus sessions, zen music streaming, and a vibrant sage aesthetic with dynamic color indicators designed for sustained concentration.
 
 [![GNOME Version](https://img.shields.io/badge/GNOME-45%2B-4A86CF.svg)](https://gitlab.gnome.org/GNOME/gnome-shell)
 [![License](https://img.shields.io/badge/License-GPL--2.0-8F9C8A.svg)](LICENSE)
@@ -8,7 +8,6 @@ A mindful productivity companion for GNOME Shell featuring intelligent screen ti
 
 ![Wellbeing Widget Screenshot](image.png)
 
----
 
 ## Features
 
@@ -42,14 +41,13 @@ Hoverable bar graphs display weekly patterns with detailed tooltips showing date
 - Color-coded bars by usage level
 - No layout glitches or jarring transitions
 
-### Sage Green Theme
-Professional color palette inspired by zen philosophy and nature, designed to reduce eye strain during extended use.
+### Vibrant Sage Theme
+Professional color palette with energetic yellow/orange gradients and calming sage green accents, designed for visual clarity and motivation.
 
 - High contrast for readability
-- Warm orange accents for Pomodoro timer
-- Smooth gradients and animations
+- Dynamic color-coded status indicators (yellow to red based on usage)
+- Smooth gradients and animations with GPU acceleration
 
----
 
 ## Installation
 
@@ -64,7 +62,6 @@ Professional color palette inspired by zen philosophy and nature, designed to re
 
 See [BUILD.md](BUILD.md) for development setup and build instructions.
 
----
 
 ## Optional: Zen Music
 
@@ -86,7 +83,6 @@ sudo zypper install mpv
 
 After installing, restart GNOME Shell (logout/login or `Alt+F2` → `r` on X11).
 
----
 
 ## Usage
 
@@ -106,8 +102,6 @@ After installing, restart GNOME Shell (logout/login or `Alt+F2` → `r` on X11).
 6. **Break Reminders** - Toggle for periodic notifications
 7. **Extension Settings** - Quick access to preferences
 
----
-
 ## Configuration
 
 Access settings via Extensions app or:
@@ -122,8 +116,6 @@ gnome-extensions prefs screentime@mehedi.io
 - Audio/visual alert preferences
 - Break reminder frequency (default: 30 min)
 - Data management (clear statistics)
-
----
 
 ## Troubleshooting
 
@@ -154,8 +146,6 @@ rm -rf ~/.cache/gnome-shell/*
 gnome-extensions enable screentime@mehedi.io
 ```
 
----
-
 ## Technical Details
 
 ### Stack
@@ -184,7 +174,6 @@ gnome-extensions enable screentime@mehedi.io
 | **File Size** | ~60KB |
 | **Historical Data** | 85% faster calculation |
 
----
 
 ## Requirements
 
@@ -196,7 +185,6 @@ gnome-extensions enable screentime@mehedi.io
 | **Optional** | `mpv` (for zen music) |
 | **Tested on** | Fedora 43 (GNOME 49), Ubuntu 24.04 (GNOME 47) |
 
----
 
 ## Contributing
 
@@ -207,7 +195,6 @@ gnome-extensions enable screentime@mehedi.io
 
 Contributions welcome. This project demonstrates clean code architecture, user-centered design, and modern JavaScript practices.
 
----
 
 ## License
 
@@ -215,7 +202,6 @@ Contributions welcome. This project demonstrates clean code architecture, user-c
 
 Free and open source. You may use, modify, and distribute this software. Any modifications must also be open source under GPL-2.0+.
 
----
 
 ## About
 
