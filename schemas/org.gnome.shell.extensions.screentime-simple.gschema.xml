@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<schemalist>
+  <schema id="org.gnome.shell.extensions.screentime-simple" path="/org/gnome/shell/extensions/screentime-simple/">
+
+    <key name="statistics-data" type="s">
+      <default>''</default>
+      <summary>Statistics data storage</summary>
+      <description>JSON string storing historical screen time data</description>
+    </key>
+
+  </schema>
+</schemalist>

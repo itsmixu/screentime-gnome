@@ -3,7 +3,7 @@
 
 set -e
 
-EXTENSION_UUID="screentime@mehedi.io"
+EXTENSION_UUID="screentime-simple@local"
 EXTENSION_DIR="$HOME/.local/share/gnome-shell/extensions/$EXTENSION_UUID"
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
