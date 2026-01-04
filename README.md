@@ -1,21 +1,14 @@
 # Screen Time Widget
 
-A simplified fork of the Wellbeing Widget focused exclusively on screen time tracking for GNOME Shell. This version removes the pomodoro timer, music player, and motivational quotes, providing a clean and minimal screen time tracking experience with system theme styling.
+A clean and minimal screen time tracker for GNOME Shell. Displays your daily screen time in the top bar with a weekly statistics overview, using system theme styling for seamless integration.
 
-> **Note:** This is a fork of the [original Wellbeing Widget](https://github.com/mH-13/wellbeing-widget). The original includes additional features like pomodoro timer, zen music player, and more. This fork simplifies the extension to focus solely on screen time tracking.
-
-## What This Fork Changes
-
-- ✅ **Simplified to screen time only** - Removed pomodoro timer, music player, and motivational quotes
-- ✅ **System theme styling** - Uses GNOME's native theme colors instead of custom vibrant styling
-- ✅ **Cleaner UI** - Simplified menu with just screen time statistics and weekly overview
-- ✅ **New extension UUID** - Uses `screentime-simple@local` to avoid conflicts with the original
+> **Note:** This is a simplified fork of the [original Wellbeing Widget](https://github.com/mH-13/wellbeing-widget). The original project includes many additional features like pomodoro timer, zen music player, motivational quotes, and more. This fork focuses exclusively on screen time tracking.
 
 [![GNOME Version](https://img.shields.io/badge/GNOME-45%2B-4A86CF.svg)](https://gitlab.gnome.org/GNOME/gnome-shell)
 [![License](https://img.shields.io/badge/License-GPL--2.0-8F9C8A.svg)](LICENSE)
 [![Platform](https://img.shields.io/badge/Platform-Linux-FCC624.svg)]()
 
-![Wellbeing Widget Screenshot](image.png)
+![Screen Time Widget Screenshot](image.png)
 
 
 ## Features
@@ -24,38 +17,24 @@ A simplified fork of the Wellbeing Widget focused exclusively on screen time tra
 Integrates with GNOME's native session tracking to provide accurate, privacy-respecting usage statistics. Data persists across reboots through GSettings storage.
 
 - Real-time tracking with 5-second update intervals
-- Color-coded weekly history (green to red based on usage)
+- Grayscale weekly history visualization (white for high usage, darker for less)
 - Efficient calculation: only updates current day, historical data cached
 - Automatic midnight transitions
 
-### Focus Sessions (Pomodoro Timer)
-Streamlined timer with inline duration controls (15/25/45/60 minutes). Visual progress bar and audio alerts help maintain focus.
+### Weekly Statistics
+Interactive bar graph showing your screen time patterns over the past week.
 
-- One-second precision countdown
-- Visual and audio completion notifications
-- Break reminder system (configurable)
-- Session statistics tracking
+- Hoverable bars with detailed tooltips showing date and time
+- Weekly average displayed in the header
+- Clean, minimal design with system theme colors
+- Bars grow from bottom to top for intuitive visualization
 
-### Zen Music Player
-Built-in lofi music streaming with animated equalizer visualization. Requires `mpv` player (optional dependency).
+### System Theme Integration
+Uses GNOME's native theme colors for seamless integration with your desktop environment.
 
-- Real-time 3-bar equalizer animation
-- Process management with proper cleanup
-- Priority system: timer display takes precedence in panel
-
-### Interactive Statistics
-Hoverable bar graphs display weekly patterns with detailed tooltips showing date, time, and completed sessions.
-
-- Smooth fade animations
-- Color-coded bars by usage level
-- No layout glitches or jarring transitions
-
-### Vibrant Sage Theme
-Professional color palette with energetic yellow/orange gradients and calming sage green accents, designed for visual clarity and motivation.
-
-- High contrast for readability
-- Dynamic color-coded status indicators (yellow to red based on usage)
-- Smooth gradients and animations with GPU acceleration
+- Automatically adapts to light and dark themes
+- Minimal custom styling for a clean appearance
+- No vibrant colors or custom gradients - just clean, readable design
 
 
 ## Installation
