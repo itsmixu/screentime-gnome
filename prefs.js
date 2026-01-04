@@ -81,19 +81,33 @@ export default class WellbeingPreferences extends ExtensionPreferences {
         aboutRow.add_suffix(versionLabel);
         aboutGroup.add(aboutRow);
 
-        const githubRow = new Adw.ActionRow({
-            title: 'GitHub Repository',
-            subtitle: 'Report issues and contribute'
+        const githubForkRow = new Adw.ActionRow({
+            title: 'This Fork (Screen Time Only)',
+            subtitle: 'Simplified version - screen time tracking only'
         });
 
-        const githubButton = new Gtk.LinkButton({
+        const githubForkButton = new Gtk.LinkButton({
+            label: 'View on GitHub',
+            uri: 'https://github.com/itsmixu/screentime-gnome',
+            valign: Gtk.Align.CENTER
+        });
+
+        githubForkRow.add_suffix(githubForkButton);
+        aboutGroup.add(githubForkRow);
+
+        const githubOriginalRow = new Adw.ActionRow({
+            title: 'Original Repository',
+            subtitle: 'Full version with pomodoro timer and music player'
+        });
+
+        const githubOriginalButton = new Gtk.LinkButton({
             label: 'View on GitHub',
             uri: 'https://github.com/mH-13/wellbeing-widget',
             valign: Gtk.Align.CENTER
         });
 
-        githubRow.add_suffix(githubButton);
-        aboutGroup.add(githubRow);
+        githubOriginalRow.add_suffix(githubOriginalButton);
+        aboutGroup.add(githubOriginalRow);
 
         page.add(aboutGroup);
 

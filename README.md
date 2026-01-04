@@ -1,6 +1,15 @@
-# Wellbeing Widget
+# Screen Time Widget
 
-A mindful productivity companion for GNOME Shell featuring intelligent screen time tracking, focus sessions, zen music streaming, and a vibrant sage aesthetic with dynamic color indicators designed for sustained concentration.
+A simplified fork of the Wellbeing Widget focused exclusively on screen time tracking for GNOME Shell. This version removes the pomodoro timer, music player, and motivational quotes, providing a clean and minimal screen time tracking experience with system theme styling.
+
+> **Note:** This is a fork of the [original Wellbeing Widget](https://github.com/mH-13/wellbeing-widget). The original includes additional features like pomodoro timer, zen music player, and more. This fork simplifies the extension to focus solely on screen time tracking.
+
+## What This Fork Changes
+
+- ✅ **Simplified to screen time only** - Removed pomodoro timer, music player, and motivational quotes
+- ✅ **System theme styling** - Uses GNOME's native theme colors instead of custom vibrant styling
+- ✅ **Cleaner UI** - Simplified menu with just screen time statistics and weekly overview
+- ✅ **New extension UUID** - Uses `screentime-simple@local` to avoid conflicts with the original
 
 [![GNOME Version](https://img.shields.io/badge/GNOME-45%2B-4A86CF.svg)](https://gitlab.gnome.org/GNOME/gnome-shell)
 [![License](https://img.shields.io/badge/License-GPL--2.0-8F9C8A.svg)](LICENSE)
