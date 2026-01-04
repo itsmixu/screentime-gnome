@@ -8,6 +8,8 @@ A clean and minimal screen time tracker for GNOME Shell. Displays your daily scr
 [![License](https://img.shields.io/badge/License-GPL--2.0-8F9C8A.svg)](LICENSE)
 [![Platform](https://img.shields.io/badge/Platform-Linux-FCC624.svg)]()
 
+![Screen Time Widget Screenshot](image.png)
+
 ## Features
 
 - Real-time screen time tracking (updates every 5 seconds)
