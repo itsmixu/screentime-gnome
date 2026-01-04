@@ -60,70 +60,60 @@ Professional color palette with energetic yellow/orange gradients and calming sa
 
 ## Installation
 
-### From GNOME Extensions Website
-
-1. Visit [extensions.gnome.org](https://extensions.gnome.org/) (pending approval)
-2. Search for "Wellbeing Widget"
-3. Click "Install"
-4. **Optional:** Install `mpv` for zen music (see below)
-
 ### Manual Installation
 
-See [BUILD.md](BUILD.md) for development setup and build instructions.
-
-
-## Optional: Zen Music
-
-The zen music player requires `mpv`:
-
+1. Clone or download this repository:
 ```bash
-# Fedora / RHEL / CentOS
-sudo dnf install mpv
-
-# Ubuntu / Debian / Pop!_OS
-sudo apt install mpv
-
-# Arch Linux / Manjaro
-sudo pacman -S mpv
-
-# openSUSE
-sudo zypper install mpv
+git clone https://github.com/itsmixu/screentime-gnome.git
+cd screentime-gnome
 ```
 
-After installing, restart GNOME Shell (logout/login or `Alt+F2` → `r` on X11).
+2. Run the installation script:
+```bash
+chmod +x install.sh
+./install.sh
+```
+
+3. Restart GNOME Shell:
+   - **X11:** Press `Alt+F2`, type `r`, press Enter
+   - **Wayland:** Log out and log back in
+
+4. Enable the extension:
+```bash
+gnome-extensions enable screentime-simple@local
+```
+
+See [BUILD.md](BUILD.md) for development setup and build instructions.
 
 
 ## Usage
 
 ### Panel Indicator
 
-- **Compact (100px):** `4h 23m` - Normal state
-- **Expanded (160px):** `4h 23m  🍅 24:35` - Active timer
-- **Music mode (160px):** `4h 23m  ▇▅▃ Zen` - Streaming audio
+The extension displays your daily screen time in the top bar:
+- Format: `Xh Ym` (e.g., `4h 23m`)
+- Updates every 5 seconds
+- Shows current day's screen time
 
 ### Dropdown Menu
 
-1. **Wellbeing Dashboard** - Header with hourly rotating quote
-2. **Weekly Overview** - Interactive graph (hover bars for details)
-3. **Statistics Summary** - Average daily metrics
-4. **Focus Session** - Duration selector and control buttons
-5. **Zen Music** - Play/stop controls for lofi streaming
-6. **Break Reminders** - Toggle for periodic notifications
-7. **Extension Settings** - Quick access to preferences
+Click the screen time indicator to open the menu:
+
+1. **Weekly Overview** - Header showing "Weekly Overview" and average screen time
+2. **Interactive Graph** - Bar chart showing screen time for the past 7 days
+   - Hover over bars to see detailed information
+   - Bars use grayscale colors (white = high usage, darker = less usage)
+3. **Settings** - Access extension preferences
 
 ## Configuration
 
 Access settings via Extensions app or:
 
 ```bash
-gnome-extensions prefs screentime@mehedi.io
+gnome-extensions prefs screentime-simple@local
 ```
 
 **Available options:**
-- Pomodoro duration (5-60 minutes)
-- Break intervals (short: 1-15 min, long: 10-30 min)
-- Audio/visual alert preferences
-- Break reminder frequency (default: 30 min)
 - Data management (clear statistics)
 
 ## Troubleshooting
@@ -131,15 +121,8 @@ gnome-extensions prefs screentime@mehedi.io
 ### Extension not visible in panel
 
 ```bash
-gnome-extensions-app  # Toggle "Wellbeing Widget" on
+gnome-extensions-app  # Toggle "Screen Time Widget" on
 # If still missing, logout/login
-```
-
-### Music player doesn't start
-
-```bash
-which mpv  # Should output: /usr/bin/mpv
-# If missing, install mpv and restart GNOME Shell
 ```
 
 ### Statistics show "No data"
@@ -149,10 +132,10 @@ Statistics accumulate over time. Continue using your computer - data appears aut
 ### Extension shows ERROR state
 
 ```bash
-gnome-extensions disable screentime@mehedi.io
+gnome-extensions disable screentime-simple@local
 rm -rf ~/.cache/gnome-shell/*
 # Logout and login
-gnome-extensions enable screentime@mehedi.io
+gnome-extensions enable screentime-simple@local
 ```
 
 ## Technical Details
@@ -163,7 +146,6 @@ gnome-extensions enable screentime@mehedi.io
 - **UI Framework:** St (Shell Toolkit), Clutter for animations
 - **State Management:** GSettings for persistent storage
 - **Data Source:** GNOME Shell session tracking (privacy-respecting)
-- **Audio:** mpv command-line player (optional)
 
 ### Architecture
 
@@ -191,18 +173,17 @@ gnome-extensions enable screentime@mehedi.io
 | **GNOME Shell** | 45, 46, 47, 48, 49 |
 | **Platform** | Linux (all major distributions) |
 | **Dependencies** | `glib2`, `gnome-shell` |
-| **Optional** | `mpv` (for zen music) |
 | **Tested on** | Fedora 43 (GNOME 49), Ubuntu 24.04 (GNOME 47) |
 
 
 ## Contributing
 
-- **Source Code:** [GitHub Repository](https://github.com/mH-13/wellbeing-widget)
-- **Issue Tracker:** [Bug Reports & Feature Requests](https://github.com/mH-13/wellbeing-widget/issues)
+- **Source Code:** [This Fork](https://github.com/itsmixu/screentime-gnome)
+- **Original Project:** [Wellbeing Widget](https://github.com/mH-13/wellbeing-widget) (includes pomodoro timer, music player, and more features)
+- **Issue Tracker:** [Bug Reports & Feature Requests](https://github.com/itsmixu/screentime-gnome/issues)
 - **Build Guide:** [BUILD.md](BUILD.md)
-- **Discussions:** [Community Forum](https://github.com/mH-13/wellbeing-widget/discussions)
 
-Contributions welcome. This project demonstrates clean code architecture, user-centered design, and modern JavaScript practices.
+Contributions welcome! This fork focuses on simplicity and minimal design.
 
 
 ## License
@@ -214,23 +195,16 @@ Free and open source. You may use, modify, and distribute this software. Any mod
 
 ## About
 
-**Mehedi Hasan** - [@mH-13](https://github.com/mH-13)
+This is a simplified fork of the [Wellbeing Widget](https://github.com/mH-13/wellbeing-widget) by [Mehedi Hasan](https://github.com/mH-13). 
 
-Built to enhance digital wellbeing and productivity through thoughtful design and clean implementation.
-
-**Skills demonstrated:**
-- GJS/GNOME Shell extension development
-- Modern JavaScript (ES6+, async/await)
-- UI/UX design and user research
-- Performance optimization
-- Accessibility considerations
+The original project includes many additional features like pomodoro timer, zen music player, motivational quotes, and vibrant styling. This fork strips those features to focus solely on screen time tracking with a clean, minimal design that integrates seamlessly with GNOME's system theme.
 
 ---
 
 <div align="center">
 
-**[Star on GitHub](https://github.com/mH-13/wellbeing-widget)** • **[Report Bug](https://github.com/mH-13/wellbeing-widget/issues)** • **[Request Feature](https://github.com/mH-13/wellbeing-widget/discussions)**
+**[Star This Fork](https://github.com/itsmixu/screentime-gnome)** • **[Original Project](https://github.com/mH-13/wellbeing-widget)** • **[Report Bug](https://github.com/itsmixu/screentime-gnome/issues)**
 
-*Supporting digital wellbeing, one extension at a time*
+*Simple screen time tracking for GNOME*
 
 </div>
