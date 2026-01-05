@@ -137,19 +137,20 @@ class WellbeingIndicator extends PanelMenu.Button {
         // Separator
         this.menu.addMenuItem(new PopupMenu.PopupSeparatorMenuItem());
 
-        // Settings button
+        // Settings button (info icon)
         const settingsItem = new PopupMenu.PopupBaseMenuItem({
             reactive: true,
             style_class: 'wellbeing-settings-item'
         });
 
-        const settingsLabel = new St.Label({
-            text: 'Settings',
-            style_class: 'wellbeing-settings-label',
-            x_align: Clutter.ActorAlign.CENTER
+        const settingsIcon = new St.Icon({
+            icon_name: 'emblem-system-symbolic',
+            style_class: 'wellbeing-settings-icon',
+            x_align: Clutter.ActorAlign.CENTER,
+            y_align: Clutter.ActorAlign.CENTER
         });
 
-        settingsItem.add_child(settingsLabel);
+        settingsItem.add_child(settingsIcon);
 
         settingsItem.connect('activate', () => {
             this._extension.openPreferences();
@@ -196,6 +197,61 @@ class WellbeingIndicator extends PanelMenu.Button {
             this._updateUI();
             return GLib.SOURCE_CONTINUE;
         });
+    }
+
+    _getAccentColor() {
+        // Get accent color from GNOME settings
+        try {
+            const interfaceSettings = new Gio.Settings({ schema_id: 'org.gnome.desktop.interface' });
+            const accentColorName = interfaceSettings.get_string('accent-color');
+            
+            // Map GNOME accent color names to hex values
+            const colorMap = {
+                'blue': '#3584e4',
+                'teal': '#2ec27e',
+                'green': '#33d17a',
+                'yellow': '#e5a50a',
+                'orange': '#ff7800',
+                'red': '#e01b24',
+                'pink': '#c061cb',
+                'purple': '#9141ac',
+                'slate': '#51a1b4',
+                'mauve': '#c061cb'
+            };
+            
+            // If it's a named color, look it up
+            if (colorMap[accentColorName]) {
+                return colorMap[accentColorName];
+            }
+            
+            // If it's already a hex color, return it (remove quotes if present)
+            if (accentColorName.startsWith('#')) {
+                return accentColorName;
+            }
+            
+            // Fallback to blue if unknown
+            return '#3584e4';
+        } catch (e) {
+            // Fallback to blue if settings access fails
+            return '#3584e4';
+        }
+    }
+
+    _hexToRgb(hex) {
+        // Convert hex color to RGB array
+        const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+        return result ? [
+            parseInt(result[1], 16),
+            parseInt(result[2], 16),
+            parseInt(result[3], 16)
+        ] : [53, 132, 228]; // Default to blue RGB
+    }
+
+    _darkenColor(hex, factor) {
+        // Darken a color by a factor (0-1, where 1 is darkest)
+        const rgb = this._hexToRgb(hex);
+        const darken = (val) => Math.round(val * (1 - factor));
+        return `rgb(${darken(rgb[0])}, ${darken(rgb[1])}, ${darken(rgb[2])})`;
     }
 
     _updateStatsView() {
@@ -291,6 +347,11 @@ class WellbeingIndicator extends PanelMenu.Button {
         // Find max values for scaling
         const maxScreenTime = Math.max(...data.map(d => d.screenTime), 1);
 
+        // Get accent color and create variants
+        const accentColorHex = this._getAccentColor();
+        const accentColorRgb = this._hexToRgb(accentColorHex);
+        const accentColor = `rgb(${accentColorRgb[0]}, ${accentColorRgb[1]}, ${accentColorRgb[2]})`;
+
         // Create bar chart
         const chartBox = new St.BoxLayout({
             vertical: false,
@@ -320,23 +381,29 @@ class WellbeingIndicator extends PanelMenu.Button {
                 y_align: Clutter.ActorAlign.FILL
             });
 
-            // Screen time bar with color coding
+            // Screen time bar with accent color coding
             const screenTimeHeight = Math.max((day.screenTime / maxScreenTime) * 80, 2);
             const hoursToday = day.screenTime / 3600;
 
-            // Color code based on screen time: green (< 4h), yellow (4-6h), orange (6-8h), red (> 8h)
-            let barColor = 'wellbeing-stats-bar-screen';
+            // Color code based on screen time using accent color variants
+            // High usage (>8h): full accent color
+            // Medium-high (6-8h): 70% opacity
+            // Medium (4-6h): 50% opacity
+            // Low (<4h): 30% opacity
+            let barColor = accentColor;
             if (hoursToday > 8) {
-                barColor = 'wellbeing-stats-bar-screen-high';
+                barColor = accentColor; // Full accent color
             } else if (hoursToday > 6) {
-                barColor = 'wellbeing-stats-bar-screen-medium-high';
+                barColor = `rgba(${accentColorRgb[0]}, ${accentColorRgb[1]}, ${accentColorRgb[2]}, 0.7)`;
             } else if (hoursToday > 4) {
-                barColor = 'wellbeing-stats-bar-screen-medium';
+                barColor = `rgba(${accentColorRgb[0]}, ${accentColorRgb[1]}, ${accentColorRgb[2]}, 0.5)`;
+            } else {
+                barColor = `rgba(${accentColorRgb[0]}, ${accentColorRgb[1]}, ${accentColorRgb[2]}, 0.3)`;
             }
 
             const screenTimeBar = new St.Widget({
-                style_class: barColor,
-                style: `height: ${screenTimeHeight}px; width: 100%;`,
+                style_class: 'wellbeing-stats-bar-screen',
+                style: `height: ${screenTimeHeight}px; width: 100%; background-color: ${barColor};`,
                 y_align: Clutter.ActorAlign.END
             });
 
