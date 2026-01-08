@@ -2,7 +2,7 @@
 
 A clean and minimal screen time tracker for GNOME Shell. Displays your daily screen time in the top bar with a weekly statistics overview.
 
-> **Note:** This is a simplified fork of the [original Wellbeing Widget](https://github.com/mH-13/wellbeing-widget). The original project includes many additional features like pomodoro timer, zen music player, motivational quotes, and more.
+> **Note:** This is a simplified fork of the [original Wellbeing Widget](https://github.com/mH-13/wellbeing-widget). The original project includes many additional features like pomodoro timer, zen music player, motivational quotes, and more. Go check them out!
 
 [![GNOME Version](https://img.shields.io/badge/GNOME-45%2B-4A86CF.svg)](https://gitlab.gnome.org/GNOME/gnome-shell)
 [![License](https://img.shields.io/badge/License-GPL--2.0-8F9C8A.svg)](LICENSE)
@@ -57,10 +57,6 @@ gnome-extensions prefs screentime-simple@local
 - GNOME Shell 45+
 - Linux (all major distributions)
 
-## Contributing
-
-- **Source Code:** [This Fork](https://github.com/itsmixu/screentime-gnome)
-- **Original Project:** [Wellbeing Widget](https://github.com/mH-13/wellbeing-widget)
 
 ## License
 
@@ -70,7 +66,7 @@ gnome-extensions prefs screentime-simple@local
 
 This is a simplified fork of the [Wellbeing Widget](https://github.com/mH-13/wellbeing-widget) by [Mehedi Hasan](https://github.com/mH-13).
 
-The original project includes many additional features like pomodoro timer, zen music player, motivational quotes, and vibrant styling. This fork focuses solely on screen time tracking with a clean, minimal design.
+The original project includes many additional features like pomodoro timer, zen music player, motivational quotes, and vibrant styling. This fork focuses solely on screen time tracking with a clean, minimal design. Go check out and support the original project!
 
 ---
 
